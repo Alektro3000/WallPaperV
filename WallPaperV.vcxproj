@@ -146,6 +146,7 @@
     <ClCompile Include="app.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="app.hpp" />
+    <ClCompile Include="Runtime.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
