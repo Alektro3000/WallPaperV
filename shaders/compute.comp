@@ -1,0 +1,128 @@
+#version 450
+
+// A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
+uint hash( uint x ) {
+    x += ( x << 10u );
+    x ^= ( x >>  6u );
+    x += ( x <<  3u );
+    x ^= ( x >> 11u );
+    x += ( x << 15u );
+    return x;
+}
+
+
+
+// Compound versions of the hashing algorithm I whipped together.
+uint hash( uvec2 v ) { return hash( v.x ^ hash(v.y)                         ); }
+uint hash( uvec3 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z)             ); }
+uint hash( uvec4 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w) ); }
+
+
+
+// Construct a float with half-open range [0:1] using low 23 bits.
+// All zeroes yields 0.0, all ones yields the next smallest representable value below 1.0.
+float floatConstruct( uint m ) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    float  f = uintBitsToFloat( m );       // Range [1:2]
+    return f - 1.0;                        // Range [0:1]
+}
+
+
+
+// Pseudo-random value in half-open range [0:1].
+float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
+float random( vec2  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+float random( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+
+struct Particle {
+	vec4 position;
+	vec4 velocity;
+    vec4 color;
+};
+
+layout (binding = 0) uniform ParameterUBO {
+    float deltaTime;
+} ubo;
+
+layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
+   Particle particlesIn[ ];
+};
+
+layout(std140, binding = 2) buffer ParticleSSBOOut {
+   Particle particlesOut[ ];
+};
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void updateCircle()
+{
+    
+    uint index = gl_GlobalInvocationID.x;  
+
+    Particle particleIn = particlesIn[index];
+    
+    if(particlesOut[index].color.a < 0)
+    {
+        vec2 rnd = vec2(random(particleIn.velocity)-0.5f,random(particleIn.velocity.yx)-0.5f);
+        
+        rnd = normalize(rnd);
+
+        particlesOut[index].position.xy = vec2(0.f,0.f);
+        particlesOut[index].velocity.xy = rnd * 0.75f;
+        
+        particlesOut[index].color.a += 1.f - 0.7f*random(particleIn.velocity.y);
+    }
+    else
+    {
+        particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime/3.0f;
+        
+        particlesOut[index].velocity.xy = particleIn.velocity.xy + 
+            ubo.deltaTime*(cross(vec3(particleIn.velocity.xy,0.f), vec3(0.f,0.f,-1.f)).xy / 2.f 
+            - particleIn.position.xy*0.1f);
+        
+        particlesOut[index].color.a = particlesIn[index].color.a - ubo.deltaTime / 3.0f;
+    }
+}
+/*
+void updateCorners()
+{
+    uint index = gl_GlobalInvocationID.x;  
+
+    Particle particleIn = particlesIn[index];
+    
+    if(particlesOut[index].color.a < 0)
+    {
+        vec2 rnd = vec2(random(particleIn.velocity)-0.5f,random(particleIn.velocity.yx)-0.5f);
+        
+        rnd = normalize(rnd);
+
+        particlesOut[index].position = rnd;
+        particlesOut[index].velocity = -rnd * 0.75f;
+        
+        particlesOut[index].color.a += 1.f - 0.f*random(particleIn.velocity.y);
+    }
+    else
+    {
+        particlesOut[index].position = particleIn.position + particleIn.velocity.xy * ubo.deltaTime/3.0f;
+        
+        particlesOut[index].velocity = particleIn.velocity + 
+            ubo.deltaTime*(cross(vec3(particleIn.velocity,0.f), vec3(0.f,0.f,-1.f)).xy / 2.f 
+            - particleIn.position*0.1f);
+        
+        particlesOut[index].color.a = particlesIn[index].color.a - ubo.deltaTime / 3.0f;
+    }
+}
+*/
+void main() 
+{
+    //if(gl_GlobalInvocationID.x < 5120)
+        updateCircle();
+    //else
+        //updateCorners();
+}
