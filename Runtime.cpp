@@ -1,5 +1,6 @@
 
 #include "MainApp.h"
+#include "Parser.h"
 #include <random>
 
 
@@ -15,6 +16,7 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     //ubo.charge = 1.f * p.x / 1920.f;
     //auto currentTime = std::chrono::high_resolution_clock::now();
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+
 }
 
 
@@ -23,6 +25,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
     std::random_device rd;   // non-deterministic generator
     std::mt19937 gen(rd());  // to seed mersenne twister.
     std::uniform_int_distribution<> dist(0001, 1000);
+    std::uniform_int_distribution<> dist3(0, TextWidth*96);
 
     // Initialize particles
     std::default_random_engine rndEngine((unsigned)time(nullptr));
@@ -31,6 +34,8 @@ void WallpaperApplication::createShaderStorageBuffers() {
     // Initial particle positions on a circle
     std::vector<Particle> particles(PARTICLE_COUNT);
     int i = 0;
+    Parser Text;
+    Text.init();
     for (auto& particle : particles) {
         i++;
         float r = 0.25f * sqrt(rndDist(rndEngine));
@@ -45,9 +50,33 @@ void WallpaperApplication::createShaderStorageBuffers() {
 
         if (i < 1024)
             particle.id.y = 1.0f;
-        else
+        else if (i < 1536)
             particle.id.y = 2.0f;
+        else
+        {
+            int guess = dist3(gen);
+            while(Text.OutArray[guess] == 0)
+                guess = dist3(gen);
+            particle.color = glm::vec4( ( (guess % TextWidth) - 0.5f * TextWidth) / 1920.f * 1.5f, 2.f*((guess / TextWidth)/1080.f+0.33f),0.f,0.f);
+            
+            particle.id = glm::vec2(a -2.5f, 3.f);
 
+        }
+        /*
+        if (particle.id.x && !Text.binit)
+        {
+            Text.init();
+            int a[1280 * 96 / 32];
+            for (int i = 0; i < 1280 * 96 / 32; i++)
+            {
+                a[i] = 0;
+                for (int j = 0; j < 32; j++)
+                    if (Text.OutArray[i * 32 + j] != 0)
+                        a[i] |= 1 << j;
+            }
+            memcpy(staticUniformBufferMapped, a, sizeof(a));
+        }
+        */
     }
 
     VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;

@@ -3,8 +3,6 @@
 
 int main()
 {
-    Parser a;
-    a.init();
     WallpaperApplication app;
 
 

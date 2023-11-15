@@ -61,7 +61,7 @@ layout(std140, binding = 2) buffer ParticleSSBOOut {
 };
 
 layout (binding = 3) uniform ParameterUSO {
-    int txt[2568];
+    vec3 color;
 } uso;
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
@@ -128,12 +128,35 @@ void updateCorners()
     particlesOut[index].color.a = ubo.battery;
 }
 
+void updateText()
+{
+    
+    uint index = gl_GlobalInvocationID.x;  
+
+    Particle particleIn = particlesIn[index];
+    
+    if(particleIn.id.x < 0)
+    {
+        particlesOut[index].velocity.xy = vec2(0.00f,-0.06f);
+        particlesOut[index].position.xy = particleIn.color.xy;
+        particlesOut[index].id.x = particleIn.id.x + 1.f;
+    }
+    else
+    {
+        particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
+                
+        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1.f;
+    }
+}
 
 void main() 
 {
-    if(particlesIn[gl_GlobalInvocationID.x].id.y < 1.5f)
+    float a = particlesIn[gl_GlobalInvocationID.x].id.y;
+    if(a < 1.5f)
         updateCircle();
-    else
+    else if(a < 2.5f)
         updateCorners();
+    else
+        updateText();
     
 }

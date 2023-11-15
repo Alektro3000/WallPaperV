@@ -19,14 +19,15 @@
 #include <set>
 #include <array>
 #include <fstream>
-
 //#define NDEBUG
 
 
-const uint32_t PARTICLE_COUNT = 1536;
+const uint32_t PARTICLE_COUNT = 4096;
 
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
+
+static const uint32_t TextWidth = 1440;
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
@@ -46,15 +47,7 @@ struct UniformBufferObject {
 };
 
 struct UniformStaticObject {
-    __int32 s[2568];
-};
-
-struct Bezier
-{
-    glm::vec3 a;
-    glm::vec3 b;
-    glm::vec3 c;
-    glm::vec3 d;
+    glm::vec4 color;
 };
 
 const std::vector<const char*> deviceExtensions = {
@@ -190,7 +183,6 @@ private:
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> computeDescriptorSets;
 
-
     std::vector<VkCommandBuffer> computeCommandBuffers;
 
 
@@ -205,6 +197,7 @@ private:
     double lastFrameTime = 0.0f;
 
     double lastTime = 0.0f;
+
 public:
 
     void run() {

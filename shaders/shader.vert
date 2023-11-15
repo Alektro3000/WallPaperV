@@ -29,16 +29,25 @@ void main() {
         fragColor.a = inId.x;
         fragColor.g *= (1.3f - inId.x);
     }
-    else
+    else    if(inId.y == 2)
     {
         gl_PointSize = 36.0;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
 
-        vec3 col = mix(vec3(1,0,0),vec3(0.8f,0.8f,0),inColor.a);
-        vec3 col1 = mix(vec3(0.8f,0.8f,0),inColor.rgb,inColor.a);
-        fragColor.rgb = mix(col,col1,inColor.a);
+        float alp = inColor.a*1.2f;
+
+        vec3 col = mix(vec3(1,0,0),vec3(0.8f,0.8f,0),alp);
+        vec3 col1 = mix(vec3(0.8f,0.8f,0),inColor.rgb,alp);
+        fragColor.rgb = mix(col,col1,alp);
         fragColor.a = inId.x;
         if(inId.x > 0.8f)
             fragColor.a *= 5.f-inId.x*5.f;
-    }    
+    }
+    else
+    {
+        gl_PointSize = 16.0;
+        gl_Position = vec4(inPosition.xy, 1.0, 1.0);
+        fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
+        fragColor.a = inId.x;
+    }
 }
