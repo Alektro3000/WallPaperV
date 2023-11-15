@@ -1,7 +1,10 @@
-#include "app.hpp"
+#include "MainApp.h"
+#include "Parser.h"
 
-int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+int main()
 {
+    Parser a;
+    a.init();
     WallpaperApplication app;
 
 

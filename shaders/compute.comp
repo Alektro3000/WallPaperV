@@ -42,12 +42,14 @@ float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
 
 struct Particle {
 	vec4 position;
-	vec4 velocity;
+	vec2 velocity;
+    vec2 id;
     vec4 color;
 };
 
 layout (binding = 0) uniform ParameterUBO {
     float deltaTime;
+    float battery;
 } ubo;
 
 layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
@@ -58,6 +60,10 @@ layout(std140, binding = 2) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 
+layout (binding = 3) uniform ParameterUSO {
+    int txt[2568];
+} uso;
+
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 void updateCircle()
@@ -67,62 +73,67 @@ void updateCircle()
 
     Particle particleIn = particlesIn[index];
     
-    if(particlesOut[index].color.a < 0)
+    if(particleIn.id.x < 0)
     {
         vec2 rnd = vec2(random(particleIn.velocity)-0.5f,random(particleIn.velocity.yx)-0.5f);
         
         rnd = normalize(rnd);
 
         particlesOut[index].position.xy = vec2(0.f,0.f);
-        particlesOut[index].velocity.xy = rnd * 0.75f;
+        particlesOut[index].velocity = rnd * 0.95f;
         
-        particlesOut[index].color.a += 1.f - 0.7f*random(particleIn.velocity.y);
+        particlesOut[index].id.x = particleIn.id.x + 1.f - 0.5f*random(particleIn.velocity.y);
     }
     else
     {
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime/3.0f;
         
-        particlesOut[index].velocity.xy = particleIn.velocity.xy + 
-            ubo.deltaTime*(cross(vec3(particleIn.velocity.xy,0.f), vec3(0.f,0.f,-1.f)).xy / 2.f 
+        particlesOut[index].velocity.xy = particleIn.velocity + 
+            ubo.deltaTime*(particleIn.velocity.yx * vec2(0.5f, -0.5f)
             - particleIn.position.xy*0.1f);
         
-        particlesOut[index].color.a = particlesIn[index].color.a - ubo.deltaTime / 3.0f;
+        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime / 3.0f;
     }
 }
-/*
 void updateCorners()
 {
     uint index = gl_GlobalInvocationID.x;  
 
     Particle particleIn = particlesIn[index];
     
-    if(particlesOut[index].color.a < 0)
+    if(particleIn.id.x < 0)
     {
-        vec2 rnd = vec2(random(particleIn.velocity)-0.5f,random(particleIn.velocity.yx)-0.5f);
-        
+        vec2 rnd = vec2(random(vec3(particleIn.position.xy,ubo.deltaTime))-0.5f,random(particleIn.position.yx)-0.5f);
+        rnd += sign(rnd)*random(particleIn.velocity.x)*0.3f;
         rnd = normalize(rnd);
 
-        particlesOut[index].position = rnd;
-        particlesOut[index].velocity = -rnd * 0.75f;
-        
-        particlesOut[index].color.a += 1.f - 0.f*random(particleIn.velocity.y);
+        vec2 pos = rnd*0.225f;
+        pos.y *= 1.77f;
+        pos.x += sign(rnd.x)*0.165f;
+        pos += sign(rnd)*(0.625f);
+
+        particlesOut[index].velocity = (pos) * (0.01f,0.0177f);
+        particlesOut[index].position.xy = pos;
+        particlesOut[index].id.x = particleIn.id.x + 1.f + random(pos);
     }
     else
     {
-        particlesOut[index].position = particleIn.position + particleIn.velocity.xy * ubo.deltaTime/3.0f;
+        particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
+                
+        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 0.5f;
         
-        particlesOut[index].velocity = particleIn.velocity + 
-            ubo.deltaTime*(cross(vec3(particleIn.velocity,0.f), vec3(0.f,0.f,-1.f)).xy / 2.f 
-            - particleIn.position*0.1f);
+        particlesOut[index].velocity.xy = particleIn.velocity.xy + ubo.deltaTime * particleIn.position.xy * 0.01f;
         
-        particlesOut[index].color.a = particlesIn[index].color.a - ubo.deltaTime / 3.0f;
     }
+    particlesOut[index].color.a = ubo.battery;
 }
-*/
+
+
 void main() 
 {
-    //if(gl_GlobalInvocationID.x < 5120)
+    if(particlesIn[gl_GlobalInvocationID.x].id.y < 1.5f)
         updateCircle();
-    //else
-        //updateCorners();
+    else
+        updateCorners();
+    
 }
