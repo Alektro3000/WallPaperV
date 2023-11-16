@@ -25,7 +25,7 @@ public:
         auto error = FT_Init_FreeType(&library);
 
         error = FT_New_Face(library,
-            "fonts/Rus.ttf",
+            "fonts/Kor.ttf",
             0,
             &face);
         int a = face->num_glyphs;
@@ -47,14 +47,14 @@ private:
         int           pen_x, pen_y, n;
         OutArray.resize(TextWidth * 96, 0);
 
-        const std::wstring txt = L"Встречая страх, создаём будущее";
+        const std::wstring txt = L"Встречая страх, создавай будущее";
         //const std::string txt = "Face the fear, build the future";
 
         //"글쎄요 축하합니다한국어를 아시나요  이것이 당신에게 무엇을 주는가 마침표 단지 흥미로워 보이기 위해 온라인 번역기를 통해 작성된 무의미한 텍스트";
 
         int numChars = txt.length();
 
-        pen_x = 0;
+        pen_x = 36;
         pen_y = 72;
 
         for (n = 0; n < numChars; n++)
@@ -74,7 +74,7 @@ private:
                 pen_y - slot->bitmap_top);
 
             /* increment pen position */
-            pen_x += slot->advance.x >> 6;
+            pen_x += (slot->advance.x >> 6 ) + 9;
             //pen_y += slot->advance.y >> 6; /* not useful for now */
         }
     }
@@ -83,11 +83,9 @@ private:
     void savebitmap(FT_Bitmap* bitmap, int posx, int posy)
     {
         int off = TextWidth;
-        if (posy + bitmap->rows > 95)
-            std::cout << "toolarge";
         for (unsigned row = 0; row < bitmap->rows; ++row)
         {
-            if(0 <= posy + row && posy + row < 96)
+            if(0 <= posy + row && posy + row < 96 && posx + bitmap->width < TextWidth)
                 memcpy(&OutArray[posx + (posy + row) * off], bitmap->buffer + row * (bitmap->pitch), bitmap->width);
         }
     }

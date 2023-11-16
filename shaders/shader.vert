@@ -34,7 +34,7 @@ void main() {
         gl_PointSize = 36.0;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
 
-        float alp = inColor.a*1.2f;
+        float alp = inColor.a;
 
         vec3 col = mix(vec3(1,0,0),vec3(0.8f,0.8f,0),alp);
         vec3 col1 = mix(vec3(0.8f,0.8f,0),inColor.rgb,alp);
@@ -43,9 +43,16 @@ void main() {
         if(inId.x > 0.8f)
             fragColor.a *= 5.f-inId.x*5.f;
     }
+    else if(inId.y == 3)
+    {
+        gl_PointSize = 14.0;
+        gl_Position = vec4(inPosition.xy, 1.0, 1.0);
+        fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
+        fragColor.a = inId.x * inId.x;
+    }
     else
     {
-        gl_PointSize = 16.0;
+        gl_PointSize = 28.0;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
         fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
         fragColor.a = inId.x;

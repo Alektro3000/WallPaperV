@@ -22,12 +22,12 @@
 //#define NDEBUG
 
 
-const uint32_t PARTICLE_COUNT = 4096;
+const uint32_t PARTICLE_COUNT = 5120;
 
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
 
-static const uint32_t TextWidth = 1440;
+static const uint32_t TextWidth = 2100;
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);

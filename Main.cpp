@@ -1,7 +1,6 @@
 #include "MainApp.h"
-#include "Parser.h"
 
-int main()
+int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     WallpaperApplication app;
 

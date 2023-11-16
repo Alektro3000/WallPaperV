@@ -26,6 +26,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
     std::mt19937 gen(rd());  // to seed mersenne twister.
     std::uniform_int_distribution<> dist(0001, 1000);
     std::uniform_int_distribution<> dist3(0, TextWidth*96);
+    std::uniform_int_distribution<> dist10(0, 9);
 
     // Initialize particles
     std::default_random_engine rndEngine((unsigned)time(nullptr));
@@ -52,15 +53,26 @@ void WallpaperApplication::createShaderStorageBuffers() {
             particle.id.y = 1.0f;
         else if (i < 1536)
             particle.id.y = 2.0f;
-        else
+        else if (i < 4096)
         {
             int guess = dist3(gen);
             while(Text.OutArray[guess] == 0)
                 guess = dist3(gen);
-            particle.color = glm::vec4( ( (guess % TextWidth) - 0.5f * TextWidth) / 1920.f * 1.5f, 2.f*((guess / TextWidth)/1080.f+0.33f),0.f,0.f);
+            particle.color = glm::vec4( ( (guess % TextWidth) - 0.5f * TextWidth) / 1920.f * 1.2f, ((guess / TextWidth)/1080.f) * 1.2f + 0.66f,0.f,0.f);
             
             particle.id = glm::vec2(a -2.5f, 3.f);
 
+        }
+        else
+        {
+            particle.id.y = 4.0f;
+            int pos = i%10;
+            int sign = (pos >= 5 ? 1 : -1);
+            pos = pos % 5;
+            float offsetx[5] =  { 0.1f,0.2f,0.3f,0.4f,0.5f };
+            float offsety[5] =  { 0.0f,-0.1f,0.1f,-0.2f,0.2f };
+            float sizey[5] =    { 1.0f,1.1f,1.2f,1.3f,1.3f };
+            particle.color = glm::vec4(sign * (offsetx[pos]*0.8f + 0.5f) , offsety[pos] - sizey[pos] * 0.5f - 0.05f, 0.03f, sizey[pos]);
         }
         /*
         if (particle.id.x && !Text.binit)
