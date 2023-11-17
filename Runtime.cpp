@@ -144,6 +144,7 @@ void WallpaperApplication::drawFrame()
 
     if (IsFullscreen())
     {
+        Sleep(1000 / 30);
         return;
     }
     vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
