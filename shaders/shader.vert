@@ -50,11 +50,21 @@ void main() {
         fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
         fragColor.a = inId.x * inId.x;
     }
-    else
+    else if(inId.y == 4)
     {
-        gl_PointSize = 28.0;
+        gl_PointSize = 25.1;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
         fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
         fragColor.a = inId.x;
+    }
+    else
+    {
+        gl_PointSize = 15.1;
+        const vec2 fact = vec2(1920.f,1080.f) / 30.f;
+        gl_Position = vec4(round(inPosition.xy*fact)/fact, 1.0, 1.0);
+        fragColor = vec4(0.9f, 0.2f, 1.f, 0.0f);
+        fragColor.a = inId.x;
+        if(inId.x > 0.8f)
+            fragColor.a *= 5.f-inId.x*5.f;
     }
 }

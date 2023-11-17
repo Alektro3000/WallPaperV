@@ -1,0 +1,62 @@
+
+#include "Base.h"
+#include <iostream>
+#include <comdef.h>
+#include <Wbemidl.h>
+#include <mmdeviceapi.h> 
+#include <endpointvolume.h>
+#include <audioclient.h>
+#include <winuser.h>
+
+bool GetVolumeLevel(float& OutVolume)
+{
+    HRESULT hr;
+    IMMDeviceEnumerator* pDeviceEnumerator = 0;
+    IMMDevice* pDevice = 0;
+    IAudioEndpointVolume* pAudioEndpointVolume = 0;
+
+    try {
+        hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pDeviceEnumerator);
+        if (FAILED(hr)) throw "CoCreateInstance";
+        hr = pDeviceEnumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &pDevice);
+        if (FAILED(hr)) throw "GetDefaultAudioEndpoint";
+        hr = pDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, NULL, (void**)&pAudioEndpointVolume);
+        if (FAILED(hr)) throw "pDevice->Active";
+
+        hr = pAudioEndpointVolume->GetMasterVolumeLevelScalar(&OutVolume);
+        if (FAILED(hr)) throw "SetMasterVolumeLevelScalar";
+
+        pAudioEndpointVolume->Release();
+        pDevice->Release();
+        pDeviceEnumerator->Release();
+        return true;
+    }
+    catch (...) {
+        if (pAudioEndpointVolume) pAudioEndpointVolume->Release();
+        if (pDevice) pDevice->Release();
+        if (pDeviceEnumerator) pDeviceEnumerator->Release();
+        throw;
+    }
+    return false;
+}
+
+bool IsFullscreen()
+{
+    HWND hWnd = GetForegroundWindow();
+    RECT appBounds;
+    RECT rc;
+    GetWindowRect(GetDesktopWindow(), &rc);
+
+    if (hWnd != HWND(0x0000000000030268) && hWnd != GetDesktopWindow() && hWnd != GetShellWindow() && hWnd != GetWallpaper())
+    {
+        GetWindowRect(hWnd, &appBounds);
+        // Now you just have to compare rc to appBounds
+        //if(appBounds.right == appBounds.left)
+
+        return appBounds.left <= rc.left
+            && appBounds.right >= rc.right
+            && appBounds.top <= rc.top
+            && appBounds.bottom >= rc.bottom;
+    }
+    return false;
+}

@@ -1,7 +1,5 @@
 #pragma once
-#define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "Base.h"
 #include <chrono>
 
 #include <glm/glm.hpp>
@@ -19,15 +17,8 @@
 #include <set>
 #include <array>
 #include <fstream>
-//#define NDEBUG
+#define NDEBUG
 
-
-const uint32_t PARTICLE_COUNT = 5120;
-
-const uint32_t WIDTH = 1920;
-const uint32_t HEIGHT = 1080;
-
-static const uint32_t TextWidth = 2100;
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
@@ -44,6 +35,11 @@ struct UniformBufferObject {
     float deltaTime = 1.0f;
     //Charge of laptop, normalized
     float charge = 1.0f;
+    float Volume = 1.0f;
+    float Random = 1.0f;
+    glm::vec2 Pos;
+    glm::vec2 PosPrev;
+    glm::vec2 PosPrev2;
 };
 
 struct UniformStaticObject {
@@ -126,6 +122,7 @@ struct SwapChainSupportDetails {
 class WallpaperApplication {
 
 private:
+    UniformBufferObject ubo;
 
     GLFWwindow* window;
 
@@ -194,10 +191,13 @@ private:
     std::vector<VkFence> computeInFlightFences;
     uint32_t currentFrame = 0;
 
-    double lastFrameTime = 0.0f;
+    float lastFrameTime = 0.0f;
 
     double lastTime = 0.0f;
 
+    int TotalFrames;
+
+    float lastCharge;
 public:
 
     void run() {

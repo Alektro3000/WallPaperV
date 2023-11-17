@@ -1,19 +1,32 @@
+#pragma once
 
 #include "MainApp.h"
 #include "Parser.h"
+#include "Usage.h"
 #include <random>
 
 
 void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 {
-    UniformBufferObject ubo{};
+    TotalFrames++;
     ubo.deltaTime = lastFrameTime * 2.0f;
-    SYSTEM_POWER_STATUS lpSystemPowerStatus;
-    GetSystemPowerStatus(&lpSystemPowerStatus);
-    ubo.charge = lpSystemPowerStatus.BatteryLifePercent/100.f;
-    //POINT p;
-    //GetCursorPos(&p);
-    //ubo.charge = 1.f * p.x / 1920.f;
+    if (TotalFrames % 60 == 1)
+    {
+        SYSTEM_POWER_STATUS lpSystemPowerStatus;
+        GetSystemPowerStatus(&lpSystemPowerStatus);
+        lastCharge = lpSystemPowerStatus.BatteryLifePercent / 100.f;
+    }
+    ubo.charge = lastCharge;
+    
+    POINT p;
+    GetCursorPos(&p);
+    ubo.PosPrev2 = ubo.PosPrev;
+    ubo.PosPrev = ubo.Pos;
+    ubo.Pos = glm::vec2(p.x/1920.f, p.y/1080.f);
+    std::default_random_engine rndEngine((unsigned)time(nullptr));
+    std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
+    ubo.Random = 1+rndDist(rndEngine);
+    GetVolumeLevel(ubo.Volume);
     //auto currentTime = std::chrono::high_resolution_clock::now();
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 
@@ -21,16 +34,17 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 
 
 void WallpaperApplication::createShaderStorageBuffers() {
-
+    std::default_random_engine rndEngine((unsigned)time(nullptr));
+    std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
     std::random_device rd;   // non-deterministic generator
     std::mt19937 gen(rd());  // to seed mersenne twister.
     std::uniform_int_distribution<> dist(0001, 1000);
-    std::uniform_int_distribution<> dist3(0, TextWidth*96);
+    std::uniform_int_distribution<> dist3(0, TextWidth*96-1);
     std::uniform_int_distribution<> dist10(0, 9);
 
+    CoInitialize(0);
+
     // Initialize particles
-    std::default_random_engine rndEngine((unsigned)time(nullptr));
-    std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
     // Initial particle positions on a circle
     std::vector<Particle> particles(PARTICLE_COUNT);
@@ -63,7 +77,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
             particle.id = glm::vec2(a -2.5f, 3.f);
 
         }
-        else
+        else if (i < 5120)
         {
             particle.id.y = 4.0f;
             int pos = i%10;
@@ -73,6 +87,10 @@ void WallpaperApplication::createShaderStorageBuffers() {
             float offsety[5] =  { 0.0f,-0.1f,0.1f,-0.2f,0.2f };
             float sizey[5] =    { 1.0f,1.1f,1.2f,1.3f,1.3f };
             particle.color = glm::vec4(sign * (offsetx[pos]*0.8f + 0.5f) , offsety[pos] - sizey[pos] * 0.5f - 0.05f, 0.03f, sizey[pos]);
+        }
+        else
+        {
+            particle.id.y = 5.0f;
         }
         /*
         if (particle.id.x && !Text.binit)
@@ -118,18 +136,23 @@ void WallpaperApplication::createShaderStorageBuffers() {
 
 void WallpaperApplication::drawFrame()
 {
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
+    Sleep(1000 / 40);
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
     updateUniformBuffer(currentFrame);
 
+    if (IsFullscreen())
+    {
+        return;
+    }
     vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 
     vkResetCommandBuffer(computeCommandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
     recordComputeCommandBuffer(computeCommandBuffers[currentFrame]);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &computeCommandBuffers[currentFrame];

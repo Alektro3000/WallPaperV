@@ -1,30 +1,8 @@
-#include "MainApp.h"
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#pragma once
 
+#include "MainApp.h"
 #define wallpaper
 
-
-HWND wallpaper_hwnd = nullptr;
-
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
-{
-    HWND p = FindWindowEx(hwnd, NULL, L"SHELLDLL_DefView", NULL);
-    if (p)
-    {
-        wallpaper_hwnd = FindWindowEx(NULL, hwnd, L"WorkerW", NULL);
-    }
-    return true;
-}
-void get_wallpaper_window()
-{
-    HWND progman = FindWindow(L"ProgMan", NULL);
-    SendMessageTimeout(progman, 0x052C, 0, 0, SMTO_NORMAL, 1000, nullptr);
-
-    EnumWindows(EnumWindowsProc, NULL);
-    return;
-
-}
 void WallpaperApplication::mainLoop()
 {
 #ifdef wallpaper
@@ -32,7 +10,7 @@ void WallpaperApplication::mainLoop()
     {
         drawFrame();
         double currentTime = glfwGetTime();
-        lastFrameTime = (currentTime - lastTime);
+        lastFrameTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
     }
 
@@ -56,6 +34,11 @@ void WallpaperApplication::cleanup()
 
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+
+    vkDestroyPipeline(device, computePipeline, nullptr);
+    vkDestroyPipelineLayout(device, computePipelineLayout, nullptr);
+
     vkDestroyRenderPass(device, renderPass, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -63,15 +46,26 @@ void WallpaperApplication::cleanup()
         vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
     }
 
+    vkDestroyBuffer(device, staticUniformBuffer, nullptr);
+    vkFreeMemory(device, staticUniformBufferMemory, nullptr);
+
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
     vkDestroyDescriptorSetLayout(device, computeDescriptorSetLayout, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroyBuffer(device, shaderStorageBuffers[i], nullptr);
+        vkFreeMemory(device, shaderStorageBuffersMemory[i], nullptr);
+    }
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(device, computeFinishedSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);
+        vkDestroyFence(device, computeInFlightFences[i], nullptr);
     }
+
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 
@@ -355,7 +349,7 @@ void WallpaperApplication::createSurface()
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 #ifdef wallpaper    
     get_wallpaper_window();
-    createInfo.hwnd = wallpaper_hwnd;
+    createInfo.hwnd = GetWallpaper();
 
 #else // wallpaper   
     createInfo.hwnd = glfwGetWin32Window(window);

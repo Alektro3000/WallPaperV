@@ -7,7 +7,8 @@
 #include <freetype/ftbitmap.h>
 #include <string.h>
 #include <bitset>
-#include "MainApp.h"
+#include <vector>
+#include "Base.h"
 
 
 struct Parser
@@ -52,7 +53,7 @@ private:
 
         //"글쎄요 축하합니다한국어를 아시나요  이것이 당신에게 무엇을 주는가 마침표 단지 흥미로워 보이기 위해 온라인 번역기를 통해 작성된 무의미한 텍스트";
 
-        int numChars = txt.length();
+        int numChars = (int)txt.length();
 
         pen_x = 36;
         pen_y = 72;
