@@ -46,17 +46,21 @@ bool IsFullscreen()
     RECT appBounds;
     RECT rc;
     GetWindowRect(GetDesktopWindow(), &rc);
-
-    if (hWnd != HWND(0x0000000000030268) && hWnd != GetDesktopWindow() && hWnd != GetShellWindow() && hWnd != GetWallpaper())
+    if (hWnd != GetDesktopWindow() && hWnd != GetShellWindow())
     {
-        GetWindowRect(hWnd, &appBounds);
-        // Now you just have to compare rc to appBounds
-        //if(appBounds.right == appBounds.left)
+        if (hWnd != GetWallpaperHandler() && hWnd != GetWallpaper())
+        {
+            GetWindowRect(hWnd, &appBounds);
+            // Now you just have to compare rc to appBounds
+            if (appBounds.right == appBounds.left)
+                if (appBounds.top == appBounds.bottom)
+                    return true;
 
-        return appBounds.left <= rc.left
-            && appBounds.right >= rc.right
-            && appBounds.top <= rc.top
-            && appBounds.bottom >= rc.bottom;
+            return appBounds.left <= rc.left
+                && appBounds.right >= rc.right
+                && appBounds.top <= rc.top
+                && appBounds.bottom >= rc.bottom;
+        }
     }
     return false;
 }

@@ -12,6 +12,7 @@ const uint32_t HEIGHT = 1080;
 static const uint32_t TextWidth = 2100;
 
 HWND GetWallpaper();
+HWND GetWallpaperHandler();
 
 BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam);
 void get_wallpaper_window();

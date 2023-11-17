@@ -2,9 +2,17 @@
 
 HWND wallpaper_hwnd = nullptr;
 
+HWND wallpaper_handler = nullptr;
+
 HWND GetWallpaper()
 {
-    return wallpaper_hwnd;
+    if (wallpaper_hwnd == nullptr)
+        get_wallpaper_window();    return wallpaper_hwnd;
+}
+HWND GetWallpaperHandler()
+{
+    if (wallpaper_handler == nullptr)
+        get_wallpaper_window();    return wallpaper_handler;
 }
 
 BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
@@ -12,6 +20,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     HWND p = FindWindowEx(hwnd, NULL, L"SHELLDLL_DefView", NULL);
     if (p)
     {
+        wallpaper_handler = hwnd;
         wallpaper_hwnd = FindWindowEx(NULL, hwnd, L"WorkerW", NULL);
     }
     return true;

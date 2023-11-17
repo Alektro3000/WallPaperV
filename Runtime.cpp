@@ -137,7 +137,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
 void WallpaperApplication::drawFrame()
 {
 
-    Sleep(1000 / 40);
+    //Sleep(1000 / 40);
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
     updateUniformBuffer(currentFrame);
