@@ -16,6 +16,10 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
         GetSystemPowerStatus(&lpSystemPowerStatus);
         lastCharge = lpSystemPowerStatus.BatteryLifePercent / 100.f;
     }
+    if (TotalFrames % 20 == 1)
+    {
+        GetVolumeLevel(ubo.Volume);
+    }
     ubo.charge = lastCharge;
     
     POINT p;
@@ -26,7 +30,6 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
     ubo.Random = 1+rndDist(rndEngine);
-    GetVolumeLevel(ubo.Volume);
     //auto currentTime = std::chrono::high_resolution_clock::now();
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 
@@ -51,6 +54,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
     int i = 0;
     Parser Text;
     Text.init();
+
     for (auto& particle : particles) {
         i++;
         float r = 0.25f * sqrt(rndDist(rndEngine));
@@ -67,17 +71,19 @@ void WallpaperApplication::createShaderStorageBuffers() {
             particle.id.y = 1.0f;
         else if (i < 1536)
             particle.id.y = 2.0f;
-        else if (i < 4096)
+        else if (i < 4096 + 1024)
         {
             int guess = dist3(gen);
-            while(Text.OutArray[guess] == 0)
+            while(Text.OutArray[guess] == 0 || (guess > TextWidth*96/2 && dist10(gen) < 6))
                 guess = dist3(gen);
+
+
             particle.color = glm::vec4( ( (guess % TextWidth) - 0.5f * TextWidth) / 1920.f * 1.2f, ((guess / TextWidth)/1080.f) * 1.2f + 0.66f,0.f,0.f);
             
-            particle.id = glm::vec2(a -2.5f, 3.f);
+            particle.id = glm::vec2(a - 2.5f, 3.f);
 
         }
-        else if (i < 5120)
+        else if (i < 5120+1024)
         {
             particle.id.y = 4.0f;
             int pos = i%10;
@@ -92,21 +98,6 @@ void WallpaperApplication::createShaderStorageBuffers() {
         {
             particle.id.y = 5.0f;
         }
-        /*
-        if (particle.id.x && !Text.binit)
-        {
-            Text.init();
-            int a[1280 * 96 / 32];
-            for (int i = 0; i < 1280 * 96 / 32; i++)
-            {
-                a[i] = 0;
-                for (int j = 0; j < 32; j++)
-                    if (Text.OutArray[i * 32 + j] != 0)
-                        a[i] |= 1 << j;
-            }
-            memcpy(staticUniformBufferMapped, a, sizeof(a));
-        }
-        */
     }
 
     VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
@@ -140,13 +131,13 @@ void WallpaperApplication::drawFrame()
     //Sleep(1000 / 40);
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-    updateUniformBuffer(currentFrame);
 
     if (IsFullscreen())
     {
         Sleep(1000 / 30);
         return;
     }
+    updateUniformBuffer(currentFrame);
     vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 
     vkResetCommandBuffer(computeCommandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);

@@ -25,9 +25,10 @@ void main() {
     {
         gl_PointSize = 36.0 + 30 * inId.x * inId.x;
         gl_Position = vec4(inPosition.x/1920*1080,inPosition.y-0.25, 1.0, 1.0);
+        //fragColor = mix(vec4(0.2,0.3,1,1),inColor,inId.x);
         fragColor = inColor;
         fragColor.a = inId.x;
-        fragColor.g *= (1.3f - inId.x);
+        fragColor.g *= (1.2f - inId.x);
     }
     else    if(inId.y == 2)
     {
@@ -39,6 +40,7 @@ void main() {
         vec3 col = mix(vec3(1,0,0),vec3(0.8f,0.8f,0),alp);
         vec3 col1 = mix(vec3(0.8f,0.8f,0),inColor.rgb,alp);
         fragColor.rgb = mix(col,col1,alp);
+
         fragColor.a = inId.x;
         if(inId.x > 0.8f)
             fragColor.a *= 5.f-inId.x*5.f;
@@ -47,13 +49,16 @@ void main() {
     {
         gl_PointSize = 14.0;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
-        fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
+        fragColor = vec4(0.3f, 0.7f, 0.9f, 0.0f);
         fragColor.a = inId.x * inId.x;
     }
     else if(inId.y == 4)
     {
         gl_PointSize = 25.1;
+        //const vec2 fact = vec2(1920.f,1080.f) / 25.f;
+        //gl_Position = vec4(round(inPosition.xy*fact)/fact, 1.0, 1.0);
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
+        
         fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
         fragColor.a = inId.x;
     }

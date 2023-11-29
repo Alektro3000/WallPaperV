@@ -2,6 +2,7 @@
 #include "MainApp.h"
 
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+//int main()
 {
     WallpaperApplication app;
 

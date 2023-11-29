@@ -314,6 +314,7 @@ void WallpaperApplication::createLogicalDevice()
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -348,7 +349,6 @@ void WallpaperApplication::createSurface()
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 #ifdef wallpaper    
-    get_wallpaper_window();
     createInfo.hwnd = GetWallpaper();
 
 #else // wallpaper   
@@ -501,7 +501,7 @@ VkExtent2D WallpaperApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR
     else {
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-
+        
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
@@ -576,9 +576,9 @@ void WallpaperApplication::createGraphicsPipeline()
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.polygonMode = VK_POLYGON_MODE_POINT;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -835,7 +835,7 @@ SwapChainSupportDetails WallpaperApplication::querySwapChainSupport(VkPhysicalDe
 
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-
+    //std::cout << details.capabilities.supportedCompositeAlpha<<std::endl;
     if (formatCount != 0) {
         details.formats.resize(formatCount);
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());

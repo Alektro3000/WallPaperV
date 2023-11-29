@@ -17,7 +17,7 @@
 #include <set>
 #include <array>
 #include <fstream>
-#define NDEBUG
+//#define NDEBUG
 
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);

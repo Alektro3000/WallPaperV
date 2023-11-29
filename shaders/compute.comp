@@ -140,7 +140,7 @@ void updateText()
 
     Particle particleIn = particlesIn[index];
     
-    if(particleIn.id.x < 0)
+    if(particleIn.id.x < 0 || (particleIn.position.y > 0.72 && particleIn.id.x < 0.4))
     {
         particlesOut[index].velocity.xy = vec2(0.00f,-0.00f);
         particlesOut[index].position.xy = particleIn.color.xy;
@@ -152,11 +152,15 @@ void updateText()
                 
         
         if(particlesOut[index].position.y < 0.72)
-            particlesOut[index].velocity = particleIn.velocity + ubo.deltaTime * vec2(0.00f,-0.08f);
+        {
+            particlesOut[index].velocity = particleIn.velocity + ubo.deltaTime * vec2(0.00f,-0.2f);
+            particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1.f;
+        }
         else
+        {
+            particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1;
             particlesOut[index].velocity = particleIn.velocity + ubo.deltaTime * vec2(0.00f,-0.0f);
-            
-        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1.f;
+        }
     }
 }
 
@@ -189,7 +193,8 @@ void UpdateFrames()
                 
                     
         particlesOut[index].velocity.xy = particleIn.velocity.xy;//vec2(0.f,0.f);
-        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * mix(0.5f,1.5f,x);
+        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * mix(0.5f,1.5f,x) ;
+        //* (length(particlesOut[index].position)-0.4);
     }
 }
 

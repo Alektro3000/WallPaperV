@@ -4,7 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-const uint32_t PARTICLE_COUNT = 5120 + 678;
+const uint32_t PARTICLE_COUNT = 5120 + 678 + 1024;
 
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
