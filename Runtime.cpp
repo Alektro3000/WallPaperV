@@ -23,7 +23,7 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     ubo.charge = lastCharge;
     
     POINT p;
-    GetCursorPos(&p);
+    GetCursorPos(&p);   
     ubo.PosPrev2 = ubo.PosPrev;
     ubo.PosPrev = ubo.Pos;
     ubo.Pos = glm::vec2(p.x/1920.f, p.y/1080.f);
