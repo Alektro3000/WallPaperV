@@ -5,25 +5,14 @@
 
 void WallpaperApplication::mainLoop()
 {
-#ifdef wallpaper
     while (true)
     {
         drawFrame();
-        double currentTime = glfwGetTime();
-        lastFrameTime = (float)(currentTime - lastTime);
-        lastTime = currentTime;
+        auto currentTime = std::chrono::high_resolution_clock::now(); 
+        lastFrameTime = (float)(currentTime - lastTime).count() * 1e-9f;
+        lastTime = currentTime; 
     }
 
-#else
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-        drawFrame();
-        double currentTime = glfwGetTime();
-        lastFrameTime = (currentTime - lastTime);
-        lastTime = currentTime;
-    }
-    vkDeviceWaitIdle(device);
-#endif // wallpaper
 
 }
 
@@ -77,9 +66,7 @@ void WallpaperApplication::cleanup()
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
-
-    glfwDestroyWindow(window);
-
+    
     glfwTerminate();
 }
 
@@ -123,20 +110,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 void WallpaperApplication::initWindow() {
     glfwInit();
-#ifdef wallpaper
-
-#else
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-
-#endif // wallpaper
-
-
-    lastTime = glfwGetTime();
+    lastTime = std::chrono::high_resolution_clock::now();
 }
 
 void WallpaperApplication::createInstance()
@@ -348,12 +322,9 @@ void WallpaperApplication::createSurface()
 {
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-#ifdef wallpaper    
+
     createInfo.hwnd = GetWallpaper();
 
-#else // wallpaper   
-    createInfo.hwnd = glfwGetWin32Window(window);
-#endif
     createInfo.hinstance = GetModuleHandle(nullptr);
 
     if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
@@ -361,13 +332,6 @@ void WallpaperApplication::createSurface()
     }
 }
 
-/*
-void WallpaperApplication::createSurface()
-{
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-    }
-}*/
 
 
 void WallpaperApplication::createSwapChain()
@@ -499,26 +463,23 @@ VkExtent2D WallpaperApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR
         return capabilities.currentExtent;
     }
     else {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        
+        int width = 1920, height = 1080;
+
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
         };
-
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-        return actualExtent;
     }
+
 }
 
 std::vector<const char*> WallpaperApplication::getRequiredExtensions() {
+    
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
     if (enableValidationLayers) {
@@ -835,7 +796,6 @@ SwapChainSupportDetails WallpaperApplication::querySwapChainSupport(VkPhysicalDe
 
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-    //std::cout << details.capabilities.supportedCompositeAlpha<<std::endl;
     if (formatCount != 0) {
         details.formats.resize(formatCount);
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
@@ -898,6 +858,7 @@ uint32_t WallpaperApplication::findMemoryType(uint32_t typeFilter, VkMemoryPrope
 
     throw std::runtime_error("failed to find suitable memory type!");
 }
+
 VkShaderModule WallpaperApplication::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -937,7 +898,6 @@ void WallpaperApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags us
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
-
 void WallpaperApplication::cleanupSwapChain()
 {
     for (auto framebuffer : swapChainFramebuffers) {
@@ -951,23 +911,6 @@ void WallpaperApplication::cleanupSwapChain()
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
-void WallpaperApplication::recreateSwapChain()
-{
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
-        glfwWaitEvents();
-    }
-
-    vkDeviceWaitIdle(device);
-
-    cleanupSwapChain();
-
-    createSwapChain();
-    createImageViews();
-    createFramebuffers();
-}
 void WallpaperApplication::createUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 

@@ -18,7 +18,7 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     }
     if (TotalFrames % 20 == 1)
     {
-        GetVolumeLevel(ubo.Volume);
+        Usage::GetVolumeLevel(ubo.Volume);
     }
     ubo.charge = lastCharge;
     
@@ -127,12 +127,10 @@ void WallpaperApplication::createShaderStorageBuffers() {
 
 void WallpaperApplication::drawFrame()
 {
-
-    //Sleep(1000 / 40);
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    if (IsFullscreen())
+    if (Usage::IsFullscreen())
     {
         Sleep(1000 / 30);
         return;
@@ -161,11 +159,7 @@ void WallpaperApplication::drawFrame()
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-        return;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
@@ -204,12 +198,8 @@ void WallpaperApplication::drawFrame()
     presentInfo.pImageIndices = &imageIndex;
 
     result = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-        framebufferResized = false;
-        recreateSwapChain();
-    }
-    else if (result != VK_SUCCESS) {
+    
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to present swap chain image!");
     }
 

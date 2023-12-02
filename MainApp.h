@@ -124,7 +124,7 @@ class WallpaperApplication {
 private:
     UniformBufferObject ubo;
 
-    GLFWwindow* window;
+    std::chrono::high_resolution_clock::time_point lastTime;
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -193,7 +193,6 @@ private:
 
     float lastFrameTime = 0.0f;
 
-    double lastTime = 0.0f;
 
     int TotalFrames;
 
@@ -208,11 +207,6 @@ public:
     }
 
 private:
-
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-        auto app = reinterpret_cast<WallpaperApplication*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
-    }
 
     void initWindow();
 
@@ -245,8 +239,6 @@ private:
 
     void mainLoop();
     void cleanupSwapChain();
-
-    void recreateSwapChain();
 
     void cleanup();
 
