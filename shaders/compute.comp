@@ -119,13 +119,13 @@ void updateCorners()
 
         particlesOut[index].velocity = (pos) * (0.01f,0.0177f);
         particlesOut[index].position.xy = pos;
-        particlesOut[index].id.x = particleIn.id.x + 1.f + random(pos);
+        particlesOut[index].id.x = particleIn.id.x + 0.5f + 0.5f * random(pos);
     }
     else
     {
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
                 
-        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 0.5f;
+        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 0.25f;
         
         particlesOut[index].velocity.xy = particleIn.velocity.xy + ubo.deltaTime * particleIn.position.xy * 0.01f;
         
@@ -247,5 +247,8 @@ void main()
         UpdateFrames();
     else
         UpdateCursor();
+    float b = particlesOut[gl_GlobalInvocationID.x].id.x;
+    if(b< -1 || b > 1)
+        particlesOut[gl_GlobalInvocationID.x].id.x = b - int(b);
     
 }

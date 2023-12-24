@@ -46,7 +46,6 @@ void WallpaperApplication::createShaderStorageBuffers() {
     std::uniform_int_distribution<> dist10(0, 9);
 
     CoInitialize(0);
-
     // Initialize particles
 
     // Initial particle positions on a circle
