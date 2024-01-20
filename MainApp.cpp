@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MainApp.h"
+#include "Additional.h"
 #define wallpaper
 
 void WallpaperApplication::mainLoop()
@@ -42,10 +43,7 @@ void WallpaperApplication::cleanup()
 
     vkDestroyDescriptorSetLayout(device, computeDescriptorSetLayout, nullptr);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroyBuffer(device, shaderStorageBuffers[i], nullptr);
-        vkFreeMemory(device, shaderStorageBuffersMemory[i], nullptr);
-    }
+    cleanupBuffer();
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -111,6 +109,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 void WallpaperApplication::initWindow() {
     glfwInit();
     lastTime = std::chrono::high_resolution_clock::now();
+
 }
 
 void WallpaperApplication::createInstance()
@@ -459,20 +458,10 @@ VkPresentModeKHR WallpaperApplication::chooseSwapPresentMode(const std::vector<V
 
 VkExtent2D WallpaperApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
-    if (capabilities.currentExtent.width != 0xcccccccc) {
-        return capabilities.currentExtent;
+    if (capabilities.currentExtent.width == 0xcccccccc) {
+        throw std::runtime_error("Failed to select Extent");
     }
-    else {
-        int width = 1920, height = 1080;
-
-        VkExtent2D actualExtent = {
-            static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height)
-        };
-        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-    }
-
+    return capabilities.currentExtent;
 }
 
 std::vector<const char*> WallpaperApplication::getRequiredExtensions() {
@@ -754,7 +743,9 @@ void WallpaperApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, ui
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[currentFrame], offsets);
 
-    vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, computePipelineLayout, 0, 1, &computeDescriptorSets[currentFrame], 0, nullptr);
+
+    vkCmdDraw(commandBuffer, PARTICLE_COUNT_FACT, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -958,25 +949,25 @@ void WallpaperApplication::createComputeDescriptorSetLayout() {
     layoutBindings[0].descriptorCount = 1;
     layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     layoutBindings[0].pImmutableSamplers = nullptr;
-    layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT;
 
     layoutBindings[1].binding = 1;
     layoutBindings[1].descriptorCount = 1;
     layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     layoutBindings[1].pImmutableSamplers = nullptr;
-    layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT;
 
     layoutBindings[2].binding = 2;
     layoutBindings[2].descriptorCount = 1;
     layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     layoutBindings[2].pImmutableSamplers = nullptr;
-    layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT;
 
     layoutBindings[3].binding = 3;
     layoutBindings[3].descriptorCount = 1;
     layoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     layoutBindings[3].pImmutableSamplers = nullptr;
-    layoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    layoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1000,6 +991,9 @@ void WallpaperApplication::createComputeDescriptorSets() {
     if (vkAllocateDescriptorSets(device, &allocInfo, computeDescriptorSets.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
+    updateComputeDescriptorSets();
+}
+void WallpaperApplication::updateComputeDescriptorSets() {
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo uniformBufferInfo{};
@@ -1019,7 +1013,7 @@ void WallpaperApplication::createComputeDescriptorSets() {
         VkDescriptorBufferInfo storageBufferInfoLastFrame{};
         storageBufferInfoLastFrame.buffer = shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
         storageBufferInfoLastFrame.offset = 0;
-        storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+        storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT_FACT;
 
         descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[1].dstSet = computeDescriptorSets[i];
@@ -1032,7 +1026,7 @@ void WallpaperApplication::createComputeDescriptorSets() {
         VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
         storageBufferInfoCurrentFrame.buffer = shaderStorageBuffers[i];
         storageBufferInfoCurrentFrame.offset = 0;
-        storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+        storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT_FACT;
 
         descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[2].dstSet = computeDescriptorSets[i];
@@ -1058,7 +1052,6 @@ void WallpaperApplication::createComputeDescriptorSets() {
         vkUpdateDescriptorSets(device, 4, descriptorWrites.data(), 0, nullptr);
     }
 }
-
 
 void WallpaperApplication::createComputePipeline() {
     auto computeShaderCode = readFile("shaders/comp.spv");
@@ -1105,11 +1098,35 @@ void WallpaperApplication::recordComputeCommandBuffer(VkCommandBuffer commandBuf
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 1, &computeDescriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDispatch(commandBuffer, PARTICLE_COUNT / 256, 1, 1);
+    vkCmdDispatch(commandBuffer, PARTICLE_COUNT_FACT / 256, 1, 1);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record compute command buffer!");
     }
 
 
+}
+
+void WallpaperApplication::recreateSwapChain() {
+    vkDeviceWaitIdle(device);
+
+    cleanupSwapChain();
+
+    cleanupBuffer();
+
+    createSwapChain();
+    createImageViews();
+    createFramebuffers();
+
+    createShaderStorageBuffers();
+    updateComputeDescriptorSets();
+    
+}
+
+void WallpaperApplication::cleanupBuffer()
+{
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroyBuffer(device, shaderStorageBuffers[i], nullptr);
+        vkFreeMemory(device, shaderStorageBuffersMemory[i], nullptr);
+    }
 }

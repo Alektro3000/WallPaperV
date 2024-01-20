@@ -4,12 +4,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-const uint32_t PARTICLE_COUNT = 5120 + 678 + 1024;
-
-const uint32_t WIDTH = 1920;
-const uint32_t HEIGHT = 1080;
+const uint32_t PARTICLE_COUNT = 5120 + 1024;
+const uint32_t PARTICLE_COUNT_Stable = 5120 + 1024 + 678;
 
 static const uint32_t TextWidth = 2100;
+static const float TextWidthNormalized = 2100/1080;
 
 HWND GetWallpaper();
 HWND GetWallpaperHandler();

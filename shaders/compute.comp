@@ -55,6 +55,8 @@ layout (binding = 0) uniform ParameterUBO {
     vec2 Position;
     vec2 PositionPrev;
     vec2 PositionPrev2;
+    vec2 Resolution;
+    int MonitorCount;
 } ubo;
 
 layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
@@ -83,8 +85,10 @@ void updateCircle()
         vec2 rnd = vec2(random(particleIn.velocity)-0.5f,random(particleIn.velocity.yx)-0.5f);
         
         rnd = normalize(rnd);
+        
+        particlesOut[index].position.xy = vec2(0,0);
+        particlesOut[index].position.z = hash(floatBitsToUint(particleIn.velocity));
 
-        particlesOut[index].position.xy = vec2(0.f,0.f);
         particlesOut[index].velocity = rnd * 0.95f;
         
         particlesOut[index].id.x = particleIn.id.x + 1.f - 0.5f*random(particleIn.velocity.y);
@@ -92,6 +96,7 @@ void updateCircle()
     else
     {
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime/3.0f;
+        particlesOut[index].position.z = particleIn.position.z;
         
         particlesOut[index].velocity.xy = particleIn.velocity + 
             ubo.deltaTime*(particleIn.velocity.yx * vec2(0.5f, -0.5f)
@@ -112,6 +117,8 @@ void updateCorners()
         rnd += sign(rnd)*random(particleIn.velocity.x)*0.3f;
         rnd = normalize(rnd);
 
+        particlesOut[index].position.z = hash(floatBitsToUint(particleIn.velocity));
+
         vec2 pos = rnd*0.225f;
         pos.y *= 1.77f;
         pos.x += sign(rnd.x)*0.165f;
@@ -124,11 +131,14 @@ void updateCorners()
     else
     {
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
-                
+        particlesOut[index].position.z = particleIn.position.z;
+
         particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 0.25f;
         
         particlesOut[index].velocity.xy = particleIn.velocity.xy + ubo.deltaTime * particleIn.position.xy * 0.01f;
         
+        if(abs( particleIn.position.x) > 1.0 || abs( particleIn.position.y) > 1.0)
+            particlesOut[index].id.x -= ubo.deltaTime * 1.5f;
     }
     particlesOut[index].color.a = ubo.battery;
 }
@@ -144,12 +154,13 @@ void updateText()
     {
         particlesOut[index].velocity.xy = vec2(0.00f,-0.00f);
         particlesOut[index].position.xy = particleIn.color.xy;
+        particlesOut[index].position.z = hash(floatBitsToUint(particleIn.velocity.xyxy + particleIn.color));
         particlesOut[index].id.x = particleIn.id.x + 1.f - random(particleIn.position) * 0.1f;
     }
     else
     {
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
-                
+        particlesOut[index].position.z = particleIn.position.z;
         
         if(particlesOut[index].position.y < 0.72)
         {
@@ -175,11 +186,12 @@ void UpdateFrames()
     if(particleIn.id.x < 0)
     {
         
-        const vec2 fact = vec2(1920.f,1080.f) / 25.f;
+        const vec2 fact = ubo.Resolution / 25.f;
         vec2 loc = vec2(random(particleIn.position.yx* ubo.Random),random(particleIn.position.xy * ubo.Random));
         
         particlesOut[index].position.xy = particleIn.color.ba * loc;
         particlesOut[index].position.xy += particleIn.color.xy;
+        particlesOut[index].position.z = hash(floatBitsToUint(particleIn.velocity));
 
         particlesOut[index].position.xy = round(fact * particlesOut[index].position.xy) / fact;
         
@@ -191,6 +203,7 @@ void UpdateFrames()
     {
         particlesOut[index].position.xy = particleIn.position.xy + mix(0.01,0.15,x) * particleIn.velocity.xy * ubo.deltaTime;
                 
+        particlesOut[index].position.z = particleIn.position.z;
                     
         particlesOut[index].velocity.xy = particleIn.velocity.xy;//vec2(0.f,0.f);
         particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * mix(0.5f,1.5f,x) ;

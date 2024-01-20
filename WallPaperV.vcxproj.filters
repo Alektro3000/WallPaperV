@@ -33,6 +33,9 @@
     <ClCompile Include="Base.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Additional.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainApp.h">
@@ -41,22 +44,22 @@
     <ClInclude Include="Parser.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Usage.h">
+    <ClInclude Include="Base.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Base.h">
+    <ClInclude Include="Additional.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="shaders\shader.vert">
+    <None Include="shaders\shader.frag">
       <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="shaders\compute.comp">
+    </None>
+    <None Include="shaders\shader.vert">
       <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="shaders\shader.frag">
+    </None>
+    <None Include="shaders\compute.comp">
       <Filter>Shaders</Filter>
-    </CustomBuild>
+    </None>
   </ItemGroup>
 </Project>

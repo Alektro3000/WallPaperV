@@ -7,12 +7,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WallPaperV", "WallPaperV.vc
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Console Debug|x64 = Console Debug|x64
+		Console Debug|x86 = Console Debug|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Console Debug|x64.ActiveCfg = Console Debug|x64
+		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Console Debug|x64.Build.0 = Console Debug|x64
+		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Console Debug|x86.ActiveCfg = Console Debug|Win32
+		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Console Debug|x86.Build.0 = Console Debug|Win32
 		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Debug|x64.ActiveCfg = Debug|x64
 		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Debug|x64.Build.0 = Debug|x64
 		{C65A789D-5589-4EA5-B594-E25B18D3570B}.Debug|x86.ActiveCfg = Debug|Win32

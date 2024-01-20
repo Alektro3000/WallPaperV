@@ -1,12 +1,21 @@
+#include "Additional.h"
 
-#include "Base.h"
-#include <iostream>
-#include <comdef.h>
-#include <Wbemidl.h>
-#include <mmdeviceapi.h> 
-#include <endpointvolume.h>
-#include <audioclient.h>
-#include <winuser.h>
+
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+    int* Count = (int*)dwData;
+    (*Count)++;
+    return TRUE;
+}
+
+int GetMonitorCount()
+{
+    int Count = 0;
+    if (EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&Count))
+        return Count;
+    return -1;//signals an error
+}
+
 namespace Usage {
 
     bool GetVolumeLevel(float& OutVolume)

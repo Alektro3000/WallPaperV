@@ -2,7 +2,7 @@
 
 #include "MainApp.h"
 #include "Parser.h"
-#include "Usage.h"
+#include "Additional.h"
 #include <random>
 
 
@@ -14,7 +14,10 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     {
         SYSTEM_POWER_STATUS lpSystemPowerStatus;
         GetSystemPowerStatus(&lpSystemPowerStatus);
-        lastCharge = lpSystemPowerStatus.BatteryLifePercent / 100.f;
+        if ((lpSystemPowerStatus.BatteryFlag & 128) == 128)
+            lastCharge = 0.9f;
+        else
+            lastCharge = lpSystemPowerStatus.BatteryLifePercent / 100.f;
     }
     if (TotalFrames % 20 == 1)
     {
@@ -26,7 +29,12 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     GetCursorPos(&p);   
     ubo.PosPrev2 = ubo.PosPrev;
     ubo.PosPrev = ubo.Pos;
-    ubo.Pos = glm::vec2(p.x/1920.f, p.y/1080.f);
+
+    ubo.Resolution.x = swapChainExtent.width / static_cast<float>(GetMonitorCount());
+    ubo.Resolution.y = static_cast<float>(swapChainExtent.height);
+    ubo.MonitorCount = (GetMonitorCount());
+
+    ubo.Pos = glm::vec2(p.x, p.y)/ubo.Resolution;
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
     ubo.Random = 1+rndDist(rndEngine);
@@ -37,6 +45,14 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 
 
 void WallpaperApplication::createShaderStorageBuffers() {
+
+    ubo.Resolution.x = swapChainExtent.width / static_cast<float>(GetMonitorCount());
+    ubo.Resolution.y = static_cast<float>(swapChainExtent.height);
+    ubo.MonitorCount = GetMonitorCount();
+
+    PARTICLE_COUNT_FACT = PARTICLE_COUNT * (ubo.MonitorCount-1) + PARTICLE_COUNT_Stable;
+    PARTICLE_COUNT_SCALAR = ubo.MonitorCount;
+
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
     std::random_device rd;   // non-deterministic generator
@@ -49,7 +65,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
     // Initialize particles
 
     // Initial particle positions on a circle
-    std::vector<Particle> particles(PARTICLE_COUNT);
+    std::vector<Particle> particles(PARTICLE_COUNT_FACT);
     int i = 0;
     Parser Text;
     Text.init();
@@ -60,29 +76,30 @@ void WallpaperApplication::createShaderStorageBuffers() {
         float theta = rndDist(rndEngine) * 2.0f * 3.1415926f;
         float x = r * cos(theta);
         float y = r * sin(theta);
-        particle.position = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
+        particle.position = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), ((int) (rndDist(rndEngine)*1000)), rndDist(rndEngine));
         particle.velocity = glm::normalize(glm::vec2(x, y)) * 0.75f;
         float a = dist(gen) / 1000.f;
         particle.color = glm::vec4(0.2f, 0.9f, 1.f, 0.0f);
         particle.id = glm::vec2(a - 2, 0.f);
 
-        if (i < 1024)
+        if (i < 1024 * PARTICLE_COUNT_SCALAR)
             particle.id.y = 1.0f;
-        else if (i < 1536)
+        else if (i < 1536 * PARTICLE_COUNT_SCALAR)
             particle.id.y = 2.0f;
-        else if (i < 4096 + 1024)
+        else if (i < 5120 * PARTICLE_COUNT_SCALAR)
         {
             int guess = dist3(gen);
             while(Text.OutArray[guess] == 0 || (guess > TextWidth*96/2 && dist10(gen) < 6))
                 guess = dist3(gen);
 
 
-            particle.color = glm::vec4( ( (guess % TextWidth) - 0.5f * TextWidth) / 1920.f * 1.2f, ((guess / TextWidth)/1080.f) * 1.2f + 0.66f,0.f,0.f);
+            particle.color = glm::vec4(((guess % TextWidth) - 0.5f * TextWidth) / ubo.Resolution.x * 1.2f, 
+                ((guess / TextWidth) / ubo.Resolution.y) * 1.2f + 0.66f, 0.f, 0.f);
             
             particle.id = glm::vec2(a - 2.5f, 3.f);
 
         }
-        else if (i < 5120+1024)
+        else if (i < 6144 * PARTICLE_COUNT_SCALAR)
         {
             particle.id.y = 4.0f;
             int pos = i%10;
@@ -99,7 +116,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
         }
     }
 
-    VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
+    VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT_FACT;
 
     // Create a staging buffer used to upload data to the gpu
     VkBuffer stagingBuffer;
@@ -158,7 +175,9 @@ void WallpaperApplication::drawFrame()
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapChain();
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
@@ -197,8 +216,10 @@ void WallpaperApplication::drawFrame()
     presentInfo.pImageIndices = &imageIndex;
 
     result = vkQueuePresentKHR(presentQueue, &presentInfo);
-    
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        recreateSwapChain();
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to present swap chain image!");
     }
 

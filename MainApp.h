@@ -40,6 +40,10 @@ struct UniformBufferObject {
     glm::vec2 Pos;
     glm::vec2 PosPrev;
     glm::vec2 PosPrev2;
+    //Resolution of one monitor
+    glm::vec2 Resolution;
+    //Amount of Monitors
+    int MonitorCount;
 };
 
 struct UniformStaticObject {
@@ -197,6 +201,10 @@ private:
     int TotalFrames;
 
     float lastCharge;
+
+
+    uint32_t PARTICLE_COUNT_FACT = 6822;
+    uint32_t PARTICLE_COUNT_SCALAR = 2;
 public:
 
     void run() {
@@ -306,4 +314,9 @@ private:
 
         return VK_FALSE;
     }
+
+    void recreateSwapChain();
+
+    void cleanupBuffer();
+    void updateComputeDescriptorSets();
 };

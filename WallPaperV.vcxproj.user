@@ -4,11 +4,19 @@
     <LocalDebuggerEnvironment>DISABLE_VK_LAYER_VALVE_steam_overlay_1 = 1</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Console Debug|Win32'">
+    <LocalDebuggerEnvironment>DISABLE_VK_LAYER_VALVE_steam_overlay_1 = 1</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerEnvironment>DISABLE_VK_LAYER_VALVE_steam_overlay_1 = 1</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerEnvironment>DISABLE_VK_LAYER_VALVE_steam_overlay_1 = 1</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Console Debug|x64'">
     <LocalDebuggerEnvironment>DISABLE_VK_LAYER_VALVE_steam_overlay_1 = 1</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>

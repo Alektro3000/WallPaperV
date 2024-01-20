@@ -1,11 +1,15 @@
 #pragma once
 #include "MainApp.h"
 
+#ifdef _CONSOLE
+int main()
+#else
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
-//int main()
+#endif
 {
     WallpaperApplication app;
 
+    static_assert(sizeof(int) == 4);
 
     try {
         app.run();
