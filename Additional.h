@@ -8,9 +8,9 @@
 #include <audioclient.h>
 #include <winuser.h>
 
-int GetMonitorCount();
-namespace Usage {
-
+namespace Additional {
+    void UpdateMonitorCount();
+    int GetMonitorCount();
     bool GetVolumeLevel(float& OutVolume);
     bool IsFullscreen();
 }

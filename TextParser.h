@@ -16,7 +16,6 @@ struct Parser
     FT_Library  library;   /* handle to library     */
     FT_Face     face;      /* handle to face object */
 public:
-    Parser() {};
     bool binit = false;
 public:
 
@@ -79,7 +78,6 @@ private:
             //pen_y += slot->advance.y >> 6; /* not useful for now */
         }
     }
-    //856 * 96 
 private:
     void savebitmap(FT_Bitmap* bitmap, int posx, int posy)
     {

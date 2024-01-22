@@ -261,7 +261,7 @@ void main()
     else
         UpdateCursor();
     float b = particlesOut[gl_GlobalInvocationID.x].id.x;
-    if(b< -1 || b > 1)
+    if(b < -1 || b > 1)
         particlesOut[gl_GlobalInvocationID.x].id.x = b - int(b);
     
 }

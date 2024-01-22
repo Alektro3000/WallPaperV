@@ -1,54 +1,58 @@
 #pragma once
 
 #include "MainApp.h"
-#include "Parser.h"
+#include "TextParser.h"
 #include "Additional.h"
 #include <random>
 
+void WallpaperApplication::lazyUpdateUniform()
+{        
+    Additional::GetVolumeLevel(ubo.Volume);
+    if (LazyUpdates % 5 != 0)
+        return;
+
+    SYSTEM_POWER_STATUS lpSystemPowerStatus;
+    GetSystemPowerStatus(&lpSystemPowerStatus);
+    if ((lpSystemPowerStatus.BatteryFlag & 128) == 128)
+        ubo.charge = 0.9f;
+    else
+        ubo.charge = lpSystemPowerStatus.BatteryLifePercent / 100.f;
+}
 
 void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 {
-    TotalFrames++;
-    ubo.deltaTime = lastFrameTime * 2.0f;
-    if (TotalFrames % 60 == 1)
+    constexpr long long fact = 300000000;
+    if (TotalTime / fact > LazyUpdates)
     {
-        SYSTEM_POWER_STATUS lpSystemPowerStatus;
-        GetSystemPowerStatus(&lpSystemPowerStatus);
-        if ((lpSystemPowerStatus.BatteryFlag & 128) == 128)
-            lastCharge = 0.9f;
-        else
-            lastCharge = lpSystemPowerStatus.BatteryLifePercent / 100.f;
+        LazyUpdates = TotalTime / fact;
+        lazyUpdateUniform();
     }
-    if (TotalFrames % 20 == 1)
-    {
-        Usage::GetVolumeLevel(ubo.Volume);
-    }
-    ubo.charge = lastCharge;
+
+    ubo.deltaTime = static_cast<float>(lastFrameTime * 2.0f);
     
     POINT p;
     GetCursorPos(&p);   
     ubo.PosPrev2 = ubo.PosPrev;
     ubo.PosPrev = ubo.Pos;
 
-    ubo.Resolution.x = swapChainExtent.width / static_cast<float>(GetMonitorCount());
-    ubo.Resolution.y = static_cast<float>(swapChainExtent.height);
-    ubo.MonitorCount = (GetMonitorCount());
-
     ubo.Pos = glm::vec2(p.x, p.y)/ubo.Resolution;
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
     ubo.Random = 1+rndDist(rndEngine);
-    //auto currentTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 
 }
 
 
 void WallpaperApplication::createShaderStorageBuffers() {
+    Additional::UpdateMonitorCount();
 
-    ubo.Resolution.x = swapChainExtent.width / static_cast<float>(GetMonitorCount());
+    ubo.Resolution.x = swapChainExtent.width / static_cast<float>(Additional::GetMonitorCount());
     ubo.Resolution.y = static_cast<float>(swapChainExtent.height);
-    ubo.MonitorCount = GetMonitorCount();
+    ubo.MonitorCount = Additional::GetMonitorCount();
 
     PARTICLE_COUNT_FACT = PARTICLE_COUNT * (ubo.MonitorCount-1) + PARTICLE_COUNT_Stable;
     PARTICLE_COUNT_SCALAR = ubo.MonitorCount;
@@ -61,7 +65,7 @@ void WallpaperApplication::createShaderStorageBuffers() {
     std::uniform_int_distribution<> dist3(0, TextWidth*96-1);
     std::uniform_int_distribution<> dist10(0, 9);
 
-    CoInitialize(0);
+    auto result = CoInitialize(0);
     // Initialize particles
 
     // Initial particle positions on a circle
@@ -146,7 +150,7 @@ void WallpaperApplication::drawFrame()
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    if (Usage::IsFullscreen())
+    if (Additional::IsFullscreen())
     {
         Sleep(1000 / 30);
         return;

@@ -205,14 +205,14 @@
     <ClCompile Include="Base.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainApp.cpp" />
-    <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="TextParser.cpp" />
     <ClCompile Include="Runtime.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Additional.h" />
     <ClInclude Include="Base.h" />
     <ClInclude Include="MainApp.h" />
-    <ClInclude Include="Parser.h" />
+    <ClInclude Include="TextParser.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compute.comp">

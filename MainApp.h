@@ -195,16 +195,15 @@ private:
     std::vector<VkFence> computeInFlightFences;
     uint32_t currentFrame = 0;
 
-    float lastFrameTime = 0.0f;
+    double lastFrameTime = 0.0f;
 
+    
 
-    int TotalFrames;
-
-    float lastCharge;
-
+    long long TotalTime = 0;
+    long long LazyUpdates = 0;
 
     uint32_t PARTICLE_COUNT_FACT = 6822;
-    uint32_t PARTICLE_COUNT_SCALAR = 2;
+    int PARTICLE_COUNT_SCALAR = 2;
 public:
 
     void run() {
@@ -319,4 +318,5 @@ private:
 
     void cleanupBuffer();
     void updateComputeDescriptorSets();
+    void lazyUpdateUniform();
 };

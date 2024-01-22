@@ -2,6 +2,7 @@
 
 #include "MainApp.h"
 #include "Additional.h"
+#include <thread>
 #define wallpaper
 
 void WallpaperApplication::mainLoop()
@@ -10,7 +11,8 @@ void WallpaperApplication::mainLoop()
     {
         drawFrame();
         auto currentTime = std::chrono::high_resolution_clock::now(); 
-        lastFrameTime = (float)(currentTime - lastTime).count() * 1e-9f;
+        TotalTime += (currentTime - lastTime).count();
+        lastFrameTime = (currentTime - lastTime).count() * 1e-9f;
         lastTime = currentTime; 
     }
 
@@ -109,6 +111,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 void WallpaperApplication::initWindow() {
     glfwInit();
     lastTime = std::chrono::high_resolution_clock::now();
+
 
 }
 

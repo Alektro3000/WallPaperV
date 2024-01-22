@@ -1,22 +1,32 @@
 #include "Additional.h"
 
 
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-    int* Count = (int*)dwData;
-    (*Count)++;
-    return TRUE;
-}
+namespace Additional {
 
-int GetMonitorCount()
-{
-    int Count = 0;
-    if (EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&Count))
-        return Count;
-    return -1;//signals an error
-}
+    int CachedMonitorCount;
 
-namespace Usage {
+    BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+    {
+        int* Count = (int*)dwData;
+        (*Count)++;
+        return TRUE;
+    }
+
+    void UpdateMonitorCount()
+    {
+        int Count = 0;
+        if (EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&Count))
+            CachedMonitorCount = Count;
+        else
+            CachedMonitorCount = -1;
+    }
+
+    int GetMonitorCount()
+    {
+        if (CachedMonitorCount == -1)
+            UpdateMonitorCount();
+        return CachedMonitorCount;
+    }
 
     bool GetVolumeLevel(float& OutVolume)
     {
@@ -54,22 +64,24 @@ namespace Usage {
     {
         HWND hWnd = GetForegroundWindow();
         RECT appBounds;
-        RECT rc;
-        GetWindowRect(GetDesktopWindow(), &rc);
+        RECT background;
+        GetWindowRect(GetDesktopWindow(), &background);
         if (hWnd != GetDesktopWindow() && hWnd != GetShellWindow())
         {
             if (hWnd != GetWallpaperHandler() && hWnd != GetWallpaper())
             {
                 GetWindowRect(hWnd, &appBounds);
-                // Now you just have to compare rc to appBounds
+
                 if (appBounds.right == appBounds.left)
                     if (appBounds.top == appBounds.bottom)
                         return true;
 
-                return appBounds.left <= rc.left
-                    && appBounds.right >= rc.right
-                    && appBounds.top <= rc.top
-                    && appBounds.bottom >= rc.bottom;
+                for (int i = 0; i < GetMonitorCount(); ++i)
+                    if (appBounds.left <= background.right * i + background.left
+                        && appBounds.right >= background.right * (i+1)
+                        && appBounds.top <= background.top 
+                        && appBounds.bottom >= background.bottom)
+                        return true;
             }
         }
         return false;
