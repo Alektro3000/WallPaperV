@@ -74,19 +74,20 @@ void main() {
         gl_PointSize = 14.0;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
         
-        /*
+        
         float fid = inPosition.x*70+50;
             int id = int(fid);
             
             if(0 <= id && id < 100)
             {
-                float u;
+                float u,k;
                 
                 u = GetVecAsArr(ubo.Volumes[id/4],id%4);
-                gl_Position.y -= u * inPosition.w;
+                k = GetVecAsArr(ubo.Volumes[(id+1)/4],(id+1)%4);
+                //gl_Position.y -= mix(u,k,fid-id)/10;
                 
             }
-            */
+            
 
 
         fragColor = vec4(0.3f, 0.7f, 0.9f, 0.0f);

@@ -162,43 +162,45 @@ void updateText()
 
     Particle particleIn = particlesIn[index];
     
-    if(particleIn.id.x < 0 || (particleIn.position.y > 0.72 && particleIn.id.x < 0.4))
+    if(particleIn.id.x < 0 || (particleIn.position.y > 0.81 && particleIn.id.x < 0.4))
     {
         particlesOut[index].velocity.xy = vec2(0.00f,-0.00f);
         particlesOut[index].position.xy = particleIn.color.xy;
         particlesOut[index].position.z = hash(floatBitsToUint(particleIn.velocity.xyxy + particleIn.color));
         particlesOut[index].id.x = particleIn.id.x + 1.f - random(particleIn.position) * 0.1f;
+        
+        if(particlesOut[index].position.y < 0.81){
+            float fid = particleIn.position.x*70+50;
+            int id = int(fid);
+
+            if(0 <= id && id < 100)
+            {
+                float u,k;
+                
+                u = GetVecAsArr(ubo.Volumes[id/4],id%4);
+                k = GetVecAsArr(ubo.Volumes[(id+1)/4],(id+1)%4);
+                u = mix(u,k,fid-id);
+                particlesOut[index].velocity.y = 
+                    (-0.05-u) * min((0.81 - particlesOut[index].position.y),0.02)*25;
+            }
+        }
     }
     else
     {
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
         particlesOut[index].position.z = particleIn.position.z;
         
+        particlesOut[index].velocity = particleIn.velocity;
+
         if(particlesOut[index].position.y < 0.81)
         {
         
-            float fid = particleIn.position.x*70+50;
-            int id = int(fid);
-            
-            particlesOut[index].velocity = particleIn.velocity;
-            particlesOut[index].id.x = particleIn.id.x;
-
-            if(0 <= id && id < 100)
-            {
-                float u;
-                
-                u = GetVecAsArr(ubo.Volumes[id/4],id%4);
-                particlesOut[index].velocity += ubo.deltaTime * vec2(0.00f,(-0.2-u)/3);
-                particlesOut[index].id.x -= ubo.deltaTime * 0.5;
-                
-            }
-
+            particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime;
 
         }
         else
         {
             particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1.f;
-            particlesOut[index].velocity = particleIn.velocity + ubo.deltaTime * vec2(0.00f,-0.0f);
         }
     }
 }

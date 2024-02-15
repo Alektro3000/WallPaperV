@@ -44,7 +44,7 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 
     for (int i = 0; i < 100; i++)
     {
-        double t = lastFrameTime * 10;
+        double t = lastFrameTime * 40;
         if (t > 1)
             AudioSmoothed[i] = AudioSaved[i];
         else
