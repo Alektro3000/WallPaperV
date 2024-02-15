@@ -13,7 +13,7 @@ vec3 ApplyHue(vec3 col, float hueAdjust)
     return col * cosAngle + cross(k, col) * sin(hueAdjust) + k * dot(k, col) * (1.0 - cosAngle);
 }
 
-layout (binding = 0) uniform ParameterUBO {
+layout (std140,binding = 0) uniform ParameterUBO  {
     float deltaTime;
     float battery;
     float Volume;
@@ -23,6 +23,7 @@ layout (binding = 0) uniform ParameterUBO {
     vec2 PositionPrev2;
     vec2 Resolution;
     int MonitorCount;
+    vec4[25] Volumes;
 } ubo;
 
 
@@ -30,7 +31,13 @@ float Remainder(float left, float right)
 {
     return left/right - int(left/right);
 }
-
+float GetVecAsArr(vec4 vec, int id)
+{
+    if(id%4 > 1)
+        return (id%2==2 ? vec.z : vec.w );
+    else
+        return (id%2==0 ? vec.x : vec.y );
+}
 void main() {
     float offset = (floatBitsToUint(inPosition.z)%ubo.MonitorCount) * ubo.MonitorCount;
     if(ubo.MonitorCount%2 == 0)
@@ -67,8 +74,24 @@ void main() {
         gl_PointSize = 14.0;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
         
+        /*
+        float fid = inPosition.x*70+50;
+            int id = int(fid);
+            
+            if(0 <= id && id < 100)
+            {
+                float u;
+                
+                u = GetVecAsArr(ubo.Volumes[id/4],id%4);
+                gl_Position.y -= u * inPosition.w;
+                
+            }
+            */
+
+
         fragColor = vec4(0.3f, 0.7f, 0.9f, 0.0f);
-        fragColor.a = inId.x * inId.x;
+        fragColor.a = inId.x * inId.x/1.6;
+
             
         gl_Position.x = (gl_Position.x+offset)/ubo.MonitorCount;
     }

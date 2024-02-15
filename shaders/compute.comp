@@ -40,6 +40,14 @@ float random( vec2  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
 float random( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
 float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
 
+float GetVecAsArr(vec4 vec, int id)
+{
+    if(id%4 > 1)
+        return (id%2==2 ? vec.z : vec.w );
+    else
+        return (id%2==0 ? vec.x : vec.y );
+}
+
 struct Particle {
 	vec4 position;
 	vec2 velocity;
@@ -57,6 +65,7 @@ layout (binding = 0) uniform ParameterUBO {
     vec2 PositionPrev2;
     vec2 Resolution;
     int MonitorCount;
+    vec4[25] Volumes;
 } ubo;
 
 layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
@@ -72,6 +81,8 @@ layout (binding = 3) uniform ParameterUSO {
 } uso;
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+
 
 void updateCircle()
 {
@@ -101,6 +112,7 @@ void updateCircle()
         particlesOut[index].velocity.xy = particleIn.velocity + 
             ubo.deltaTime*(particleIn.velocity.yx * vec2(0.5f, -0.5f)
             - particleIn.position.xy*0.1f);
+
         
         particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime / 3.0f;
     }
@@ -162,14 +174,30 @@ void updateText()
         particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
         particlesOut[index].position.z = particleIn.position.z;
         
-        if(particlesOut[index].position.y < 0.72)
+        if(particlesOut[index].position.y < 0.81)
         {
-            particlesOut[index].velocity = particleIn.velocity + ubo.deltaTime * vec2(0.00f,-0.2f);
-            particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1.f;
+        
+            float fid = particleIn.position.x*70+50;
+            int id = int(fid);
+            
+            particlesOut[index].velocity = particleIn.velocity;
+            particlesOut[index].id.x = particleIn.id.x;
+
+            if(0 <= id && id < 100)
+            {
+                float u;
+                
+                u = GetVecAsArr(ubo.Volumes[id/4],id%4);
+                particlesOut[index].velocity += ubo.deltaTime * vec2(0.00f,(-0.2-u)/3);
+                particlesOut[index].id.x -= ubo.deltaTime * 0.5;
+                
+            }
+
+
         }
         else
         {
-            particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1;
+            particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 1.f;
             particlesOut[index].velocity = particleIn.velocity + ubo.deltaTime * vec2(0.00f,-0.0f);
         }
     }
@@ -213,17 +241,21 @@ void UpdateFrames()
 
 void UpdateCursor()
 {
+    const float TimeFactor = 2.f;
     uint index = gl_GlobalInvocationID.x;  
 
     Particle particleIn = particlesIn[index];
     
+        vec2 Prev = ubo.PositionPrev;
+        vec2 Pos = ubo.Position;
+        
+        float dist = length(Prev - Pos) / (TimeFactor*ubo.deltaTime)+0.01f;
+
     if(particleIn.id.x < 0)
     {
         vec2 rnd = vec2(random(vec4(particleIn.position.xy,ubo.deltaTime,ubo.Random))-0.5f,random(vec4(ubo.Random,particleIn.position.xy,ubo.deltaTime))-0.5f);
         rnd = normalize(rnd) * random(particleIn.position.xyxx);
         
-        vec2 Prev = ubo.PositionPrev;
-        vec2 Pos = ubo.Position;
         /*
         if(random(vec2(ubo.deltaTime,ubo.Random) ) > 0.5f);
         {
@@ -231,7 +263,6 @@ void UpdateCursor()
             Prev = ubo.PositionPrev2;
         }*/
 
-        float dist = length(Prev - Pos) / ubo.deltaTime+0.01f;
         
         vec2 loc = mix(Prev,Pos,random(vec3(particleIn.velocity.xy,ubo.Random))) * 2 - vec2(1,1);
         loc += rnd * min(0.05f, max(0.05f/dist,0.02f) ) * vec2(1.f,1.77f);
@@ -241,9 +272,10 @@ void UpdateCursor()
     }
     else
     {
-        particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime;
+        particlesOut[index].position.xy = particleIn.position.xy + particleIn.velocity.xy * ubo.deltaTime * TimeFactor;
         particlesOut[index].velocity.xy = normalize(particleIn.position.xy-(ubo.Position*2-vec2(1,1)))*0.1f;
-        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * 2.0f;
+        particlesOut[index].id.x = particleIn.id.x - ubo.deltaTime * TimeFactor * 2.0f;
+        
     }
 }
 

@@ -4,6 +4,8 @@
 #include "TextParser.h"
 #include "Additional.h"
 #include <random>
+#include <numeric>
+#include <cmath>
 
 void WallpaperApplication::lazyUpdateUniform()
 {        
@@ -21,21 +23,51 @@ void WallpaperApplication::lazyUpdateUniform()
 
 void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 {
-    constexpr long long fact = 300000000;
+    constexpr long long fact = 3e8; // once 0.3 seconds
     if (TotalTime / fact > LazyUpdates)
     {
         LazyUpdates = TotalTime / fact;
         lazyUpdateUniform();
     }
+    constexpr long long fact1 = 10e7; // once 0.1 seconds
+    if (TotalTime / fact1 > LazyUpdates1)
+    {
+        LazyUpdates1 = TotalTime / fact1;
+        auto q = AudioCapture.GetSound(100);
 
-    ubo.deltaTime = static_cast<float>(lastFrameTime * 2.0f);
+        if (q.size() != 0)
+            AudioSaved = q;
+        else
+            std::fill(AudioSaved.begin(), AudioSaved.end(), 0);
+
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        double t = lastFrameTime * 10;
+        if (t > 1)
+            AudioSmoothed[i] = AudioSaved[i];
+        else
+            AudioSmoothed[i] = (1-t)*AudioSmoothed[i] + t*AudioSaved[i];
+    }
+    auto sum = std::reduce(AudioSmoothed.begin(), AudioSmoothed.end());
+    auto min = *std::min_element(AudioSmoothed.begin(), AudioSmoothed.end());
+    for (int i = 0; i < 25; i++)
+    {
+        ubo.Volumes[i].x = AudioSmoothed[i * 4 + 0] - min;
+        ubo.Volumes[i].y = AudioSmoothed[i * 4 + 1] - min;
+        ubo.Volumes[i].z = AudioSmoothed[i * 4 + 2] - min;
+        ubo.Volumes[i].w = AudioSmoothed[i * 4 + 3] - min;
+    }
+
+    ubo.deltaTime = static_cast<float>(lastFrameTime * 2) * 0.5f;
     
     POINT p;
     GetCursorPos(&p);   
     ubo.PosPrev2 = ubo.PosPrev;
     ubo.PosPrev = ubo.Pos;
-
     ubo.Pos = glm::vec2(p.x, p.y)/ubo.Resolution;
+
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
     ubo.Random = 1+rndDist(rndEngine);
@@ -90,20 +122,21 @@ void WallpaperApplication::createShaderStorageBuffers() {
             particle.id.y = 1.0f;
         else if (i < 1536 * PARTICLE_COUNT_SCALAR)
             particle.id.y = 2.0f;
-        else if (i < 5120 * PARTICLE_COUNT_SCALAR)
+        else if (i < 6656 * PARTICLE_COUNT_SCALAR)
         {
             int guess = dist3(gen);
             while(Text.OutArray[guess] == 0 || (guess > TextWidth*96/2 && dist10(gen) < 6))
                 guess = dist3(gen);
 
 
-            particle.color = glm::vec4(((guess % TextWidth) - 0.5f * TextWidth) / ubo.Resolution.x * 1.2f, 
-                ((guess / TextWidth) / ubo.Resolution.y) * 1.2f + 0.66f, 0.f, 0.f);
+            particle.color = glm::vec4(
+                ((guess % TextWidth) - 0.5f * TextWidth) / ubo.Resolution.x * 1.2f, 
+                ((guess / TextWidth) / ubo.Resolution.y) * 1.2f + 0.75f, 0.f, 0.f);
             
             particle.id = glm::vec2(a - 2.5f, 3.f);
-
+            particle.position.w = 0;
         }
-        else if (i < 6144 * PARTICLE_COUNT_SCALAR)
+        else if (i < 7680 * PARTICLE_COUNT_SCALAR)
         {
             particle.id.y = 4.0f;
             int pos = i%10;
@@ -149,12 +182,13 @@ void WallpaperApplication::drawFrame()
 {
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
+#ifdef NDEBUG 
     if (Additional::IsFullscreen())
     {
         Sleep(1000 / 30);
         return;
     }
+#endif // NDEBUG 
     updateUniformBuffer(currentFrame);
     vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 

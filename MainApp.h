@@ -1,5 +1,6 @@
 #pragma once
 #include "Base.h"
+#include "Audio.h"
 #include <chrono>
 
 #include <glm/glm.hpp>
@@ -27,14 +28,10 @@ const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 struct UniformBufferObject {
-    /*
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-    */
     float deltaTime = 1.0f;
     //Charge of laptop, normalized
     float charge = 1.0f;
+    //Volume, normalized
     float Volume = 1.0f;
     float Random = 1.0f;
     glm::vec2 Pos;
@@ -44,6 +41,7 @@ struct UniformBufferObject {
     glm::vec2 Resolution;
     //Amount of Monitors
     int MonitorCount;
+    glm::vec4 Volumes[25];
 };
 
 struct UniformStaticObject {
@@ -201,9 +199,14 @@ private:
 
     long long TotalTime = 0;
     long long LazyUpdates = 0;
+    long long LazyUpdates1 = 0;
 
     uint32_t PARTICLE_COUNT_FACT = 6822;
     int PARTICLE_COUNT_SCALAR = 2;
+
+    Audio AudioCapture;
+    std::vector<double > AudioSaved = std::vector<double >(100);
+    std::vector<double > AudioSmoothed = std::vector<double >(100);
 public:
 
     void run() {
