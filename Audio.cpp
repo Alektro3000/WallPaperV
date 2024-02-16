@@ -86,8 +86,7 @@ std::vector<double> Audio::GetSound(int discr)
     UINT32 packetLength = 0;
     hr = pCaptureClient->GetNextPacketSize(&packetLength);
     std::vector<float> data;
-    EXIT_ON_ERROR(hr)
-    if (packetLength == 0) {
+    if ((packetLength == 0) || (hr != 0)) {
         ReleaseAudioCapture();
         InitAudioCapture();
         hr = pCaptureClient->GetNextPacketSize(&packetLength);
