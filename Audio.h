@@ -7,7 +7,7 @@
 #include <mmdeviceapi.h>
 #include <iostream>
 #include <Mmreg.h>
-#include <iostream>
+#include "fft.h"
 
 #pragma comment(lib, "Mf.lib")
 #pragma comment(lib, "Mfplat.lib")
@@ -39,6 +39,8 @@ public:
 
 
 private:
+    void InitAudioCapture();
+    void ReleaseAudioCapture();
     std::vector<double> out;
     std::vector<int> outWeight;
     Audio(const Audio&) = delete;
@@ -46,17 +48,8 @@ private:
     Audio(Audio&&) = delete;
     Audio& operator=(Audio&&) = delete;
 
-    void operator~()
-    {
-        CoUninitialize();
-        if (pAudioClient != NULL)
-            pAudioClient->Stop();
+    FastFurieTransform<> FTran;
 
-        CoTaskMemFree(pwfx);
-        SAFE_RELEASE(pEnumerator)
-            SAFE_RELEASE(pDevice)
-            SAFE_RELEASE(pAudioClient)
-            SAFE_RELEASE(pCaptureClient)
-    }
+    void operator~();
 };
 

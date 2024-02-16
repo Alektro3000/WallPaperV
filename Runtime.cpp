@@ -23,13 +23,13 @@ void WallpaperApplication::lazyUpdateUniform()
 
 void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 {
-    constexpr long long fact = 3e8; // once 0.3 seconds
+    constexpr long long fact = 300000000; // once 0.3 seconds
     if (TotalTime / fact > LazyUpdates)
     {
         LazyUpdates = TotalTime / fact;
         lazyUpdateUniform();
     }
-    constexpr long long fact1 = 10e7; // once 0.1 seconds
+    constexpr long long fact1 = 70000000; // once 0.07 seconds
     if (TotalTime / fact1 > LazyUpdates1)
     {
         LazyUpdates1 = TotalTime / fact1;
@@ -54,10 +54,10 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     auto min = *std::min_element(AudioSmoothed.begin(), AudioSmoothed.end());
     for (int i = 0; i < 25; i++)
     {
-        ubo.Volumes[i].x = AudioSmoothed[i * 4 + 0] - min;
-        ubo.Volumes[i].y = AudioSmoothed[i * 4 + 1] - min;
-        ubo.Volumes[i].z = AudioSmoothed[i * 4 + 2] - min;
-        ubo.Volumes[i].w = AudioSmoothed[i * 4 + 3] - min;
+        ubo.Volumes[i].x = (float)(AudioSmoothed[i * 4 + 0] - min);
+        ubo.Volumes[i].y = (float)(AudioSmoothed[i * 4 + 1] - min);
+        ubo.Volumes[i].z = (float)(AudioSmoothed[i * 4 + 2] - min);
+        ubo.Volumes[i].w = (float)(AudioSmoothed[i * 4 + 3] - min);
     }
 
     ubo.deltaTime = static_cast<float>(lastFrameTime * 2) * 0.5f;

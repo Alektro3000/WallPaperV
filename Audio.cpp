@@ -1,43 +1,8 @@
-#include "Audio.h"
-#include <complex.h>
-#include <math.h>
-#include <cmath>
-#include <iomanip>
-#include <algorithm>
-#include <bit>
-#include <numeric>
 #pragma once
+#include "numeric"
+#include "Audio.h"
+#include "fft.cpp"
 
-
-typedef std::complex<double> ftype;
-
-
-template<typename T>
-std::vector<ftype> fft(std::vector<T> p, ftype w) {
-    int n = p.size();
-    if (n == 1)
-        return { p[0] };
-
-    std::vector<T> AB[2];
-    for (int i = 0; i < n; i++)
-        AB[i % 2].push_back(p[i]);
-    auto A = fft(AB[0], w * w);
-    auto B = fft(AB[1], w * w);
-    std::vector<ftype> res(n);
-    ftype wt = 1;
-    int k = n / 2;
-    for (int i = 0; i < n; i++) {
-        res[i] = A[i % k] + wt * B[i % k];
-        wt *= w;
-    }
-    return res;
-    
-}
-//N must be Nth pow of 2    
-template<typename T>
-std::vector<ftype> evaluate(std::vector<T> p) {
-    return fft(p, std::polar(1., 2 * (3.1415926) / p.size()));
-}
 
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
 const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
@@ -46,8 +11,11 @@ const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
 
 Audio::Audio()
 {
-    HRESULT hr;
     CoInitialize(nullptr);
+    InitAudioCapture();
+}
+void Audio::InitAudioCapture(){
+    HRESULT hr;
     hr = CoCreateInstance(
         CLSID_MMDeviceEnumerator, NULL,
         CLSCTX_ALL, IID_IMMDeviceEnumerator,
@@ -87,32 +55,48 @@ Audio::Audio()
     EXIT_ON_ERROR(hr)
 
 
-    // Calculate the actual duration of the allocated buffer.
-    hnsActualDuration = (double)REFTIMES_PER_SEC *
-    bufferFrameCount / pwfx->Format.nSamplesPerSec;
-
     hr = pAudioClient->Start();  // Start recording.
     EXIT_ON_ERROR(hr)
     return;
 Exit:
-    throw std::exception("Failed Construction of Audio Capture");
+    throw std::exception("Failed Initializing of Audio Capture");
 };
 
+void Audio::ReleaseAudioCapture() {
+
+    if (pAudioClient != NULL)
+        pAudioClient->Stop();
+
+    CoTaskMemFree(pwfx);
+    SAFE_RELEASE(pEnumerator)
+        SAFE_RELEASE(pDevice)
+        SAFE_RELEASE(pAudioClient)
+        SAFE_RELEASE(pCaptureClient)
+}
+
+void Audio::operator~()
+{
+    ReleaseAudioCapture();
+    CoUninitialize();
+}
 
 std::vector<double> Audio::GetSound(int discr)
 {
     HRESULT hr;
     UINT32 packetLength = 0;
-    BYTE* pData;
-    DWORD flags;
-    int totalframes = 0;
-    long long k = 0;
-    static_assert(sizeof(k) == 8);
     hr = pCaptureClient->GetNextPacketSize(&packetLength);
     std::vector<float> data;
     EXIT_ON_ERROR(hr)
+    if (packetLength == 0) {
+        ReleaseAudioCapture();
+        InitAudioCapture();
+        hr = pCaptureClient->GetNextPacketSize(&packetLength);
+        EXIT_ON_ERROR(hr)
+    }
     while (packetLength != 0)
     {
+        DWORD flags;
+        BYTE* pData;
         // Get the available data in the shared buffer.
         hr = pCaptureClient->GetBuffer(
             &pData,
@@ -128,8 +112,8 @@ std::vector<double> Audio::GetSound(int discr)
                 // Copy the available capture data to the audio sink.
                 data.resize(numFramesAvailable + data.size());
 
-                for (int i = 0; i < numFramesAvailable; i++)
-                    data[data.size()+i-numFramesAvailable] = (reinterpret_cast<float*>(pData))[i * 2];
+                for (UINT32 i = 0; i < numFramesAvailable; i++)
+                    data[data.size()+i-numFramesAvailable] = (reinterpret_cast<float*>(pData))[i * pwfx->Format.nChannels];
                
             }
 
@@ -143,44 +127,33 @@ std::vector<double> Audio::GetSound(int discr)
     }
     if (data.size() != 0)
     {
-        int k = data.size();
+        int k = (int)data.size();
         k--;
         k |= k >> 1;
         k |= k >> 2;
         k |= k >> 4;
         k |= k >> 8;
         k |= k >> 16;
-        k |= k >> 32;
         k++;
         k /= 2;
         data.resize(k);
-        auto rawInfo = evaluate(data);
-        static_assert(sizeof(float) == 4);
-        //auto herzToBucket = [](auto herz)
-        //    {return log(pow(herz / 25,2) / (700)) / log(1.067); };
-        //auto herzToBucket = [](auto herz)
-        //    {return (herz-20)/100; };
+        auto rawInfo = FTran.evaluate(data);
 
-        //auto herzToBucket = [](auto herz)
-        //    {return log(herz / 25) / log(1.067); };
-        auto herzToBucket = [](auto herz)
-            {return log(pow(herz / 25,1.3) / (7.6)) / log(1.067); };
-
+        auto herzToBucket = [discr](auto herz)
+                {return (pow(log10(herz),3) * 1.38 - 3.05) * discr / 100.; };
         auto kToHerz = [k, SamplePerSecond = (pwfx->Format.nSamplesPerSec)](auto i)
             {return ((double)i / k) * SamplePerSecond; };
-
-        auto idk = [kToHerz, herzToBucket](auto i) {return herzToBucket(kToHerz(i)); };
 
         out.resize(discr, 0);
         outWeight.resize(discr, 0);
         std::fill(out.begin(), out.end(), 0);
         std::fill(outWeight.begin(), outWeight.end(), 0);
-        int mx = 0;
-        int mxherz = 0;
+        int mx = discr;
+        double mxherz = 20000;
         for (int i = 1; i < k; ++i)
         {   
             double herz = kToHerz(i);
-            int id = herzToBucket(herz);
+            auto id = herzToBucket(herz);
             if (id >= discr)
             {
                 mx = i - 1;
@@ -188,18 +161,21 @@ std::vector<double> Audio::GetSound(int discr)
                 break;
             }
             if (id >= 0)
-                outWeight[id]++;
+                outWeight[(int)id]++;
         }
         int l = std::reduce(outWeight.begin()+1,outWeight.end(), 0);
         for (int i = 1; i < mx; ++i)
         {
-            int id = idk(i);
+            int id = (int)herzToBucket(kToHerz(i));
             if (id >= 0 && id < discr)
                 out[id] = max(out[id], abs(rawInfo[i]));
         }
         for (int i = 1; i < discr; ++i)
             if (outWeight[i] != 0)
-                out[i] = min((out[i] / k) * 35,0.4);
+                out[i] = min((out[i] / k) * 35, 0.4);
+        for (int i = 1; i < discr-1; ++i)
+            if (outWeight[i] == 0)
+                out[i] = (out[i - 1] + out[i + 1] )/ 2;
         return out;
     }
 Exit:

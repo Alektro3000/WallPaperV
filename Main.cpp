@@ -10,6 +10,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     WallpaperApplication app;
 
     static_assert(sizeof(int) == 4);
+    static_assert(sizeof(float) == 4);
 
     try {
         app.run();
