@@ -207,7 +207,6 @@ void WallpaperApplication::pickPhysicalDevice()
     }
 }
 
-
 bool WallpaperApplication::isDeviceSuitable(VkPhysicalDevice device) {
     QueueFamilyIndices indices = findQueueFamilies(device);
 
@@ -392,7 +391,6 @@ void WallpaperApplication::createSwapChain()
 
 void WallpaperApplication::createImageViews()
 {
-
     swapChainImageViews.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {

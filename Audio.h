@@ -36,11 +36,17 @@ class Audio
 public:
 	Audio();
 	std::vector<double> GetSound(int discr = 100);
+    void RecordSound();
+    void ClearRecord();
 
 
 private:
+
+    std::vector<std::complex<float> > StoredData;
     void InitAudioCapture();
     void ReleaseAudioCapture();
+    //Return is Capture updated
+    bool CheckActualCapture();
     std::vector<double> out;
     std::vector<int> outWeight;
     Audio(const Audio&) = delete;

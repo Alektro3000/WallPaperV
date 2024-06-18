@@ -29,6 +29,8 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
         LazyUpdates = TotalTime / fact;
         lazyUpdateUniform();
     }
+
+
     constexpr long long fact1 = 70000000; // once 0.07 seconds
     if (TotalTime / fact1 > LazyUpdates1)
     {
@@ -39,8 +41,12 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
             AudioSaved = q;
         else
             std::fill(AudioSaved.begin(), AudioSaved.end(), 0);
-
+        
+        AudioCapture.ClearRecord();
     }
+    else
+        AudioCapture.RecordSound();
+
 
     for (int i = 0; i < 100; i++)
     {
@@ -64,9 +70,11 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
     
     POINT p;
     GetCursorPos(&p);   
+    RECT Pos = Additional::GetMonitorBoundingBox();
+
     ubo.PosPrev2 = ubo.PosPrev;
-    ubo.PosPrev = ubo.Pos;
-    ubo.Pos = glm::vec2(p.x, p.y)/ubo.Resolution;
+    ubo.PosPrev = ubo.Pos; 
+    ubo.Pos = glm::vec2( (float)(p.x - Pos.left) / (Pos.right-Pos.left), (float)(p.y - Pos.top)/ (Pos.bottom-Pos.top));
 
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
@@ -80,12 +88,23 @@ void WallpaperApplication::updateUniformBuffer(uint32_t currentImage)
 
 
 void WallpaperApplication::createShaderStorageBuffers() {
-    Additional::UpdateMonitorCount();
-
-    ubo.Resolution.x = swapChainExtent.width / static_cast<float>(Additional::GetMonitorCount());
-    ubo.Resolution.y = static_cast<float>(swapChainExtent.height);
+    Additional::UpdateMonitors();
     ubo.MonitorCount = Additional::GetMonitorCount();
-
+    {
+        auto rect = Additional::GetMonitorBoundingBox();
+        ubo.FullResolution = glm::vec2(rect.right-rect.left,rect.bottom-rect.top);
+    }
+    {
+        if (ubo.MonitorCount <= 4)
+        {
+            auto bounding = Additional::GetMonitorBoundingBox();
+            auto rects = Additional::GetMonitorsBoxes();
+            std::transform(rects.begin(), rects.end(), ubo.Monitors,
+                [res = ubo.FullResolution, bounding](RECT Inp)
+                {return glm::vec4((Inp.left - bounding.left) / res.x*2-1, (Inp.top - bounding.top) / res.y * 2 - 1,
+                    (Inp.right - Inp.left) / res.x*2, (Inp.bottom - Inp.top) / res.y * 2); });
+        }
+    }
     PARTICLE_COUNT_FACT = PARTICLE_COUNT * (ubo.MonitorCount-1) + PARTICLE_COUNT_Stable;
     PARTICLE_COUNT_SCALAR = ubo.MonitorCount;
 
@@ -127,11 +146,13 @@ void WallpaperApplication::createShaderStorageBuffers() {
             int guess = dist3(gen);
             while(Text.OutArray[guess] == 0 || (guess > TextWidth*96/2 && dist10(gen) < 6))
                 guess = dist3(gen);
-
+            float myfloat = particle.position.z;
+            auto Monitor = ubo.Monitors[std::bit_cast<unsigned int>(myfloat)%ubo.MonitorCount];
+            glm::vec2 Resolution = glm::vec2(Monitor.z,Monitor.w) * ubo.FullResolution/2.f;
 
             particle.color = glm::vec4(
-                ((guess % TextWidth) - 0.5f * TextWidth) / ubo.Resolution.x * 1.2f, 
-                ((guess / TextWidth) / ubo.Resolution.y) * 1.2f + 0.75f, 0.f, 0.f);
+                ((guess % TextWidth) - 0.5f * TextWidth) / Resolution.x * 1.2f,
+                ((guess / TextWidth) / Resolution.y) * 1.2f + 0.75f, 0.f, 0.f);
             
             particle.id = glm::vec2(a - 2.5f, 3.f);
             particle.position.w = 0;
@@ -179,7 +200,8 @@ void WallpaperApplication::createShaderStorageBuffers() {
 }
 
 void WallpaperApplication::drawFrame()
-{
+{   
+
     // Compute submission        
     vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 #ifdef NDEBUG 

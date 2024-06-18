@@ -155,7 +155,7 @@
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\Al\Documents\Visual Studio 2022\Libraries\glfw-3.3.8.bin.WIN64\include;C:\VulkanSDK\1.3.268.0\Include;C:\Users\Al\Documents\Visual Studio 2022\Libraries\glm\;C:\VulkanSDK\Freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -191,7 +191,7 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\Al\Documents\Visual Studio 2022\Libraries\glfw-3.3.8.bin.WIN64\include;C:\VulkanSDK\1.3.268.0\Include;C:\Users\Al\Documents\Visual Studio 2022\Libraries\glm\;C:\VulkanSDK\Freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

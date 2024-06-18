@@ -18,11 +18,14 @@ layout (std140,binding = 0) uniform ParameterUBO  {
     float battery;
     float Volume;
     float Random;
+    int MonitorCount;
+    float Ratio;
+    vec2 Dec;
     vec2 Position;
     vec2 PositionPrev;
     vec2 PositionPrev2;
-    vec2 Resolution;
-    int MonitorCount;
+    vec2 FullResolution;
+    vec4[4] Monitors;
     vec4[25] Volumes;
 } ubo;
 
@@ -39,14 +42,13 @@ float GetVecAsArr(vec4 vec, int id)
         return (id%2==0 ? vec.x : vec.y );
 }
 void main() {
-    float offset = (floatBitsToUint(inPosition.z)%ubo.MonitorCount) * ubo.MonitorCount;
-    if(ubo.MonitorCount%2 == 0)
-        offset = (floatBitsToUint(inPosition.z)%ubo.MonitorCount - 0.5) * ubo.MonitorCount;
+    vec4 MonInfo = ubo.Monitors[floatBitsToUint(inPosition.z)%ubo.MonitorCount];
+    
     if(inId.y == 1)
     {
+        vec2 Resolution = MonInfo.zw * ubo.FullResolution;
         gl_PointSize = 36.0 + 30 * inId.x * inId.x;
-        gl_Position = vec4(inPosition.x/ubo.Resolution.x*ubo.Resolution.y,inPosition.y-0.25, 1.0, 1.0);
-        gl_Position.x = (gl_Position.x+offset)/ubo.MonitorCount;
+        gl_Position = vec4(inPosition.x*Resolution.y/Resolution.x,inPosition.y-0.25, 1.0, 1.0);
         //fragColor = mix(vec4(0.2,0.3,1,1),inColor,inId.x);
         fragColor = inColor;
         fragColor.a = inId.x;
@@ -66,8 +68,6 @@ void main() {
         fragColor.a = inId.x;
         if(inId.x > 0.8f)
             fragColor.a *= 5.f-inId.x*5.f;
-            
-        gl_Position.x = (gl_Position.x+offset)/ubo.MonitorCount;
     }
     else if(inId.y == 3)
     {
@@ -92,15 +92,11 @@ void main() {
 
         fragColor = vec4(0.3f, 0.7f, 0.9f, 0.0f);
         fragColor.a = inId.x * inId.x/1.6;
-
-            
-        gl_Position.x = (gl_Position.x+offset)/ubo.MonitorCount;
     }
     else if(inId.y == 4)
     {
         gl_PointSize = 25.1;
         gl_Position = vec4(inPosition.xy, 1.0, 1.0);
-        gl_Position.x = (gl_Position.x+offset)/ubo.MonitorCount;
         
         fragColor = vec4(0.2f, 0.9f, 1.f, 0.0f);
         fragColor.a = inId.x;
@@ -108,16 +104,15 @@ void main() {
     else
     {
         gl_PointSize = 15.1;
-        const vec2 fact = ubo.Resolution / 30.f;
+        const vec2 fact = ubo.FullResolution / 30.f;
         gl_Position = vec4(round(inPosition.xy*fact)/fact, 1.0, 1.0);
-        if(ubo.MonitorCount%2 == 0)
-            gl_Position.x = (gl_Position.x-1)/ubo.MonitorCount;
-        else
-            gl_Position.x = (gl_Position.x)/ubo.MonitorCount;
             
         fragColor = vec4(0.9f, 0.2f, 1.f, 0.0f);
         fragColor.a = inId.x;
         if(inId.x > 0.8f)
             fragColor.a *= 5.f-inId.x*5.f;
+        //We return as cursor don't need to reposition between monitors
+        return;
     }
+    gl_Position.xy = MonInfo.xy+MonInfo.zw/2 + (gl_Position.xy*MonInfo.zw/2);
 }

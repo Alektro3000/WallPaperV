@@ -34,13 +34,18 @@ struct UniformBufferObject {
     //Volume, normalized
     float Volume = 1.0f;
     float Random = 1.0f;
+    //Amount of Monitors
+    int MonitorCount;
+    //
+    float Ratio;
+    glm::vec2 Dec;
     glm::vec2 Pos;
     glm::vec2 PosPrev;
     glm::vec2 PosPrev2;
-    //Resolution of one monitor
-    glm::vec2 Resolution;
-    //Amount of Monitors
-    int MonitorCount;
+    //Resolution of bordering rect
+    glm::vec2 FullResolution;
+    //x - posx, y - posy, z- extentx, w - extenty, normalised
+    glm::vec4 Monitors[4];
     glm::vec4 Volumes[25];
 };
 
@@ -56,7 +61,7 @@ const std::vector<const char*> deviceExtensions = {
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
-const bool enableValidationLayers = true;
+const bool enableValidationLayers = false;
 #endif
 
 const int MAX_FRAMES_IN_FLIGHT = 2;

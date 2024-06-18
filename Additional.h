@@ -7,10 +7,13 @@
 #include <endpointvolume.h>
 #include <audioclient.h>
 #include <winuser.h>
+#include "vector"
 
 namespace Additional {
-    void UpdateMonitorCount();
+    void UpdateMonitors();
     int GetMonitorCount();
+    RECT GetMonitorBoundingBox();
+    std::vector<RECT> GetMonitorsBoxes();
     bool GetVolumeLevel(float& OutVolume);
     bool IsFullscreen();
 }

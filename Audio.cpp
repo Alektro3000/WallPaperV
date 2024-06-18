@@ -12,16 +12,14 @@ const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
 Audio::Audio()
 {
     CoInitialize(nullptr);
+    HRESULT hr = CoCreateInstance(
+        CLSID_MMDeviceEnumerator, NULL,
+        CLSCTX_ALL, IID_IMMDeviceEnumerator,
+        (void**)&pEnumerator);
     InitAudioCapture();
 }
 void Audio::InitAudioCapture(){
     HRESULT hr;
-    hr = CoCreateInstance(
-        CLSID_MMDeviceEnumerator, NULL,
-        CLSCTX_ALL, IID_IMMDeviceEnumerator,
-        (void**)&pEnumerator);
-    EXIT_ON_ERROR(hr)
-
         hr = pEnumerator->GetDefaultAudioEndpoint(
             eRender, eConsole, &pDevice);
     EXIT_ON_ERROR(hr)
@@ -68,7 +66,6 @@ void Audio::ReleaseAudioCapture() {
         pAudioClient->Stop();
 
     CoTaskMemFree(pwfx);
-    SAFE_RELEASE(pEnumerator)
         SAFE_RELEASE(pDevice)
         SAFE_RELEASE(pAudioClient)
         SAFE_RELEASE(pCaptureClient)
@@ -76,21 +73,43 @@ void Audio::ReleaseAudioCapture() {
 
 void Audio::operator~()
 {
+    SAFE_RELEASE(pEnumerator)
     ReleaseAudioCapture();
     CoUninitialize();
 }
+bool Audio::CheckActualCapture() {
+    HRESULT hr;
+    LPWSTR a = nullptr, b= nullptr;
 
-std::vector<double> Audio::GetSound(int discr)
+    IMMDevice* pDev;
+    hr = pEnumerator->GetDefaultAudioEndpoint(
+        eRender, eConsole, &pDev);
+    EXIT_ON_ERROR(hr)
+    hr = pDev->GetId(&a);
+    SAFE_RELEASE(pDev)
+    EXIT_ON_ERROR(hr)
+    hr = pDevice->GetId(&b);
+    EXIT_ON_ERROR(hr)
+    if (wcscmp(a, b) != 0)
+        EXIT_ON_ERROR(hr)
+    return false;
+Exit:
+
+    ReleaseAudioCapture();
+    InitAudioCapture();
+    CoTaskMemFree(a);
+    CoTaskMemFree(b);
+    return true;
+}
+
+void Audio::RecordSound()
 {
     HRESULT hr;
     UINT32 packetLength = 0;
     hr = pCaptureClient->GetNextPacketSize(&packetLength);
-    std::vector<float> data;
     if ((packetLength == 0) || (hr != 0)) {
-        ReleaseAudioCapture();
-        InitAudioCapture();
-        hr = pCaptureClient->GetNextPacketSize(&packetLength);
-        EXIT_ON_ERROR(hr)
+        if (CheckActualCapture())
+            hr = pCaptureClient->GetNextPacketSize(&packetLength);
     }
     while (packetLength != 0)
     {
@@ -109,11 +128,11 @@ std::vector<double> Audio::GetSound(int discr)
             else
             {
                 // Copy the available capture data to the audio sink.
-                data.resize(numFramesAvailable + data.size());
+                StoredData.resize(numFramesAvailable + StoredData.size());
 
                 for (UINT32 i = 0; i < numFramesAvailable; i++)
-                    data[data.size()+i-numFramesAvailable] = (reinterpret_cast<float*>(pData))[i * pwfx->Format.nChannels];
-               
+                    StoredData[StoredData.size() + i - numFramesAvailable] = (reinterpret_cast<float*>(pData))[i * pwfx->Format.nChannels];
+
             }
 
         EXIT_ON_ERROR(hr)
@@ -124,9 +143,22 @@ std::vector<double> Audio::GetSound(int discr)
             hr = pCaptureClient->GetNextPacketSize(&packetLength);
         EXIT_ON_ERROR(hr)
     }
-    if (data.size() != 0)
+
+Exit:
+    return;
+}
+
+void Audio::ClearRecord()
+{
+    StoredData.clear();
+}
+
+std::vector<double> Audio::GetSound(int discr)
+{
+    RecordSound();
+    if (StoredData.size() != 0)
     {
-        int k = (int)data.size();
+        int k = (int)StoredData.size();
         k--;
         k |= k >> 1;
         k |= k >> 2;
@@ -135,8 +167,8 @@ std::vector<double> Audio::GetSound(int discr)
         k |= k >> 16;
         k++;
         k /= 2;
-        data.resize(k);
-        auto rawInfo = FTran.evaluate(data);
+        StoredData.resize(k);
+        auto rawInfo = FTran.evaluate(StoredData);
 
         auto herzToBucket = [discr](auto herz)
                 {return (pow(log10(herz),3) * 1.38 - 3.05) * discr / 100.; };
@@ -177,6 +209,5 @@ std::vector<double> Audio::GetSound(int discr)
                 out[i] = (out[i - 1] + out[i + 1] )/ 2;
         return out;
     }
-Exit:
     return {};
 }

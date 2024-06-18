@@ -2,52 +2,46 @@
 
 
 template<typename T>
-void FastFurieTransform<T>::FastFurie(int n, std::complex<T> w, int offset, int depth)
+void FastFurieTransform<T>::FastFurie(std::vector<std::complex<T> >& Allocated, int n, std::complex<T> w, int offset)
 {
     if (n == 1)
-    {
-        Allocated[depth][offset] = AllocatedForInp[depth][offset];
         return;
-    }
 
-    int k = n / 2;
+    int k = n/2;
 
-    for (int i = 0; i < n; i++)
-        AllocatedForInp[depth + 1][((i % 2) * k) + (i / 2) + offset] = AllocatedForInp[depth][offset + i];
+    FastFurie(Allocated, k, w* w, offset);
+    FastFurie(Allocated, k, w* w, offset + k);
 
-    FastFurie(k, w* w, offset, depth + 1);
-    FastFurie(k, w* w, offset + k, depth + 1);
     std::complex<T> wt = 1;
-    for (int i = 0; i < n; i++) {
-        Allocated[depth][offset + i] = Allocated[depth + 1][offset + (i % k)] + wt * Allocated[depth + 1][offset + k + (i % k)];
+    for (int i = 0; i < k; i++) {
+        auto t = wt * Allocated[offset+k+i];
+
+        Allocated[offset + i + k] = Allocated[offset + i] - t;
+        Allocated[offset + i] = Allocated[offset + i] + t;
+
         wt *= w;
     }
 
 }
 
 template<typename T>
-std::vector<std::complex<T>> FastFurieTransform<T>::evaluate(std::vector<T> p)
+std::vector<std::complex<T>> FastFurieTransform<T>::evaluate(std::vector< std::complex<T> > p)
 {
+
+
     int n = (int)p.size();
-    int k = 0;
-    int n1 = n;
-    while (n1 > 0)
-    {
-        n1 /= 2;
-        k++;
+
+
+    for (int i = 0; i < n; i++) {
+        int k = (n-1) ^ i;
+
+        //int k = 0;
+        //for (int l = 0; l < logn; l++)
+        //    k |= ((i >> l & 1) << (logn - l - 1));
+
+        if (i < k)
+            std::swap(p[i], p[k]);
     }
-    k += 2;
-    AllocatedForInp.resize(k);
-    for (int i = 0; i < k; i++)
-        AllocatedForInp[i].resize(n);
-
-    Allocated.resize(k);
-    for (int i = 0; i < k; i++)
-        Allocated[i].resize(n);
-
-
-    for (int i = 0; i < n; i++)
-        AllocatedForInp[0][i] = p[i];
-    FastFurie(n, (std::complex<T>)(std::polar(1., 2 * (3.1415926) / p.size())), 0, 0);
-    return Allocated[0];
+    FastFurie(p, n, (std::complex<T>)(std::polar(1.,-2 * (3.1415926) / p.size())), 0);
+    return p;
 }

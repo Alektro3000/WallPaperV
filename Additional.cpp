@@ -4,6 +4,7 @@
 namespace Additional {
 
     int CachedMonitorCount;
+    std::vector<RECT> CachedMonitorPositions;
 
     BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
     {
@@ -11,12 +12,22 @@ namespace Additional {
         (*Count)++;
         return TRUE;
     }
+    BOOL CALLBACK MonitorEnumProcPos(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+    {
+        ((std::vector<RECT>*)dwData)->push_back(*lprcMonitor);
+        return TRUE;
+    }
 
-    void UpdateMonitorCount()
+    void UpdateMonitors()
     {
         int Count = 0;
+        std::vector<RECT> Pos = {};
         if (EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&Count))
+        {
+            EnumDisplayMonitors(NULL, NULL, MonitorEnumProcPos, (LPARAM)&Pos);
+            CachedMonitorPositions = Pos;
             CachedMonitorCount = Count;
+        }
         else
             CachedMonitorCount = -1;
     }
@@ -24,8 +35,26 @@ namespace Additional {
     int GetMonitorCount()
     {
         if (CachedMonitorCount == -1)
-            UpdateMonitorCount();
+            UpdateMonitors();
         return CachedMonitorCount;
+    }
+    RECT GetMonitorBoundingBox()
+    {
+        if (CachedMonitorCount == -1)
+            UpdateMonitors();
+        RECT Out = {};
+        for (auto rect : CachedMonitorPositions)
+        {
+            UnionRect(&Out, &Out, &rect);
+        }
+        
+        return Out;
+    }
+    std::vector<RECT> GetMonitorsBoxes()
+    {
+        if (CachedMonitorCount == -1)
+            UpdateMonitors();
+        return CachedMonitorPositions;
     }
 
     bool GetVolumeLevel(float& OutVolume)
